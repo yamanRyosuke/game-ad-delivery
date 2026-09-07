@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<!--
+  プレイアブル広告版（単体 HTML）: すきまくぐり
+  tools/build-playable.py が生成したもの。直接編集しないこと。
+  直すのは flappy/ と shared/ と playable/ の側。
+  ビルド日時: 2026-09-07 19:55:22
+-->
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>すきまくぐり｜ゲーム広告</title>
+<style>
+/* ---- ../shared/game.css ---- */
+/*
+ * game.css — 広告ゲーム共通の枠まわり
+ *
+ * ゲームごとに違うのは canvas に描く中身だけ。外側は全部これで共通にする。
+ * 表示比率は 1:1 で統一している。メディアに渡す iframe のコードが
+ * ゲームごとに変わらないようにするため。
+ */
+
+html, body { margin: 0; padding: 0; background: #0d1017; overflow: hidden; }
+body {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh;
+  font-family: "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#stage { position: relative; line-height: 0; }
+
+canvas {
+  display: block;
+  /* 画面の短辺に合わせて正方形を保つ。iframe 側で aspect-ratio:1/1 を
+     指定してもらう前提だが、指定が無くても破綻しないようにしている。 */
+  width: min(720px, 100vw, 100vh);
+  height: min(720px, 100vw, 100vh);
+  /* pan-y = 縦スクロールはブラウザに任せ、タップだけをゲームが受け取る。
+     none にすると canvas の上で記事をスクロールできず、
+     スマホで「広告に指が吸い付いて記事が読めない」状態になる。 */
+  touch-action: pan-y;
+  background: #0d1017;
+}
+
+/* --- 開始画面 ------------------------------------------------------------ */
+#start {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(13, 16, 23, 0.93);
+  line-height: 1.6;
+}
+#start .card { width: min(88%, 520px); text-align: center; color: #f2f4f8; }
+#start h1 { margin: 0 0 10px; font-size: clamp(20px, 5.4vw, 30px); font-weight: 800; }
+#start p  { margin: 0 0 22px; font-size: clamp(12px, 3.2vw, 15px); color: #97a3b4; }
+#start .btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* --- 終了後のバー -------------------------------------------------------- */
+/* canvas の「下」ではなく「上」に重ねる。iframe を正方形にすると canvas が
+   枠いっぱいになり、下に置いた要素は見えなくなるため。 */
+#after {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;
+  padding: 16px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+  line-height: 1.6;
+  background: linear-gradient(to top, rgba(13, 16, 23, 0.96), rgba(13, 16, 23, 0));
+}
+
+#start[hidden], #after[hidden] { display: none; }
+
+/* --- ボタン -------------------------------------------------------------- */
+button, #btnCta {
+  font: inherit; font-size: clamp(13px, 3.4vw, 16px); font-weight: 700;
+  padding: 12px 20px; border: 1px solid #3d5a80; border-radius: 4px;
+  background: #1b2436; color: #f2f4f8; cursor: pointer;
+}
+button:hover { background: #243049; }
+#btnCta {
+  display: inline-block; text-decoration: none; box-sizing: border-box;
+  background: #f5b544; color: #1b2436; border-color: #f5b544;
+}
+#btnCta:hover { background: #f7c467; }
+
+/* 右下の「埋め込みコード」ボタンは embed-button.js が自前で描画する。
+   どのゲームの CSS でも同じ見た目になるよう、あちら側で完結させてある。 */
+</style>
+<style>
+/* ---- playable/shell.css ---- */
+/*
+ * shell.css — プレイアブル広告版だけに足す外枠
+ *
+ * 記事に貼る iframe 配信版は正方形（1:1）で統一しているが、
+ * プレイアブル広告は Meta が「縦向き（portrait）かつレスポンシブ」を必須にしている。
+ * canvas は 720x720 のままなので、縦長の画面では上下に余白が出る。
+ * その余白を使って CTA を大きく置くのが以下の指定。
+ *
+ * 注意: #start と #after は #stage の中に絶対配置されている（shared/game.css）。
+ * ここで position を通常フローに戻すと、#stage を flex にした瞬間に
+ * canvas の「横」へ回り込む。絶対配置のまま扱うこと。
+ */
+:root {
+  /* CTA バーの高さ。canvas の下に必ずこの分の余白を確保する。
+     終了前から場所を空けておくことで、CTA 出現時に画面が動かない。 */
+  --cta-h: 96px;
+}
+
+html, body { height: 100%; }
+body {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/* 正方形の canvas を、CTA バーの分を除いた領域の中央に置く */
+#stage {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  padding-bottom: var(--cta-h);
+}
+#game {
+  width: min(100vw, calc(100vh - var(--cta-h)));
+  height: min(100vw, calc(100vh - var(--cta-h)));
+  max-width: 100%;
+}
+
+/* CTA バー。canvas の上に重ねるのではなく、下に確保した余白へ置く。
+   縦長画面では canvas の外に出した方が押しやすく、誤タップも減る。 */
+#after {
+  height: var(--cta-h);
+  box-sizing: border-box;
+  padding: 0 16px calc(env(safe-area-inset-bottom, 0px));
+  background: #0d1017;
+  flex-wrap: nowrap;
+}
+#btnCta {
+  flex: 1 1 auto;
+  max-width: 320px;
+  text-align: center;
+  padding: 14px 20px;
+  font-size: clamp(15px, 4.2vw, 18px);
+}
+#btnReplay { flex: 0 0 auto; }
+
+/* 横向きで開かれたときも破綻させない。
+   TikTok は config.json で縦固定にするが、Meta のプレビューや
+   実機の回転までは保証されないため、横でも成立させておく。 */
+@media (orientation: landscape) {
+  #stage { padding-bottom: 0; }
+  #game { width: min(720px, 100vw, 100vh); height: min(720px, 100vw, 100vh); }
+  #after {
+    height: auto;
+    padding: 16px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to top, rgba(13, 16, 23, .96), rgba(13, 16, 23, 0));
+    flex-wrap: wrap;
+  }
+}
+</style>
+</head>
+<body data-state="ready">
+<div id="stage">
+  <canvas id="game" width="720" height="720"></canvas>
+
+  <div id="start" hidden>
+    <div class="card">
+      <h1>すきまくぐり</h1>
+      <p>タップで上に飛ぶ。柱のすきまを抜けていく。<br>（キーボードは Space / Enter）</p>
+      <div class="btns"><button id="btnPlay">はじめる</button></div>
+    </div>
+  </div>
+
+  <div id="after" hidden>
+    <button id="btnReplay">もう一回</button>
+    <button id="btnCta" data-href="https://example.com/lp/flappy">詳しくはこちら</button>
+  </div>
+</div>
+<
+<script>
+/* ---- playable/adapter.js ---- */
+/*
+ * adapter.js — プレイアブル広告版だけに入る、CTA の委譲先アダプタ
+ *
+ * プレイアブル広告は「広告ネットワークのコンテナの中で動く単体 HTML」なので、
+ * ストアへ送る手段がネットワークごとに違う。ゲーム側にネットワーク判定を書くと
+ * 配信先が増えるたびにゲームを触ることになるため、ここで吸収する。
+ *
+ *   Meta     window.FbPlayableAd.onCTAClick()
+ *   TikTok   window.openAppStore()
+ *   MRAID系  window.mraid.open(url)      … Unity / AppLovin / ironSource など
+ *   なし     親へ postMessage するだけ    … 掲載イメージのページ / 単体で開いたとき
+ *
+ * 判定は「読み込み時」ではなく「クリック時」に行う。ネットワークの SDK は
+ * コンテナ側があとから注入することがあり、起動時点ではまだ存在しないため。
+ *
+ * このファイルは iframe 配信版（各ゲームの index.html）には入らない。
+ * 入るのは tools/build-playable.py が生成した単体 HTML だけ。
+ */
+(function () {
+  'use strict';
+
+  function detect() {
+    if (window.FbPlayableAd && typeof window.FbPlayableAd.onCTAClick === 'function') return 'meta';
+    if (typeof window.openAppStore === 'function') return 'tiktok';
+    if (window.mraid && typeof window.mraid.open === 'function') return 'mraid';
+    return 'none';
+  }
+
+  function notify(network, href, handled) {
+    var payload = {
+      source: 'game-ad',
+      event: 'cta_dispatch',
+      data: { network: network, href: href, handled: handled },
+      ts: Date.now()
+    };
+    console.log('[playable] CTA →', network, handled ? '(ネットワークAPIへ委譲)' : '(委譲先なし)');
+    try {
+      if (window.parent && window.parent !== window) window.parent.postMessage(payload, '*');
+    } catch (e) { /* コンテナがクロスオリジンでも落とさない */ }
+    document.dispatchEvent(new CustomEvent('gamead:cta_dispatch', { detail: payload }));
+  }
+
+  window.__adNetworkCta = function (href) {
+    var network = detect();
+    switch (network) {
+      case 'meta':
+        window.FbPlayableAd.onCTAClick();
+        break;
+      case 'tiktok':
+        window.openAppStore();
+        break;
+      case 'mraid':
+        window.mraid.open(href);
+        break;
+      default:
+        // ここで location を書き換えたくなるが、やってはいけない。
+        // TikTok は JS リダイレクトを明示的に禁止しており、審査で弾かれる。
+        // 遷移させるかどうかは、埋め込んでいる側の責任にする。
+        break;
+    }
+    notify(network, href, network !== 'none');
+  };
+
+  window.__adNetwork = detect;
+})();
+</script>
+<script>
+/* ---- ../shared/ad-sdk.js ---- */
+/*
+ * ad-sdk.js — 広告ゲーム共通の配信まわり
+ *
+ * どのゲームも「ゲームの中身」以外は同じことをする。その部分だけをここに集めた。
+ *
+ *   - 親ページ（Web メディア）への postMessage
+ *   - CTA のクリック計測
+ *
+ * 右下の「埋め込みコード」ボタンは embed-button.js が別に受け持つ。
+ *
+ * ゲーム側は AdSDK.init() を1回呼び、あとは start() / complete() / interaction()
+ * を適切なタイミングで呼ぶだけでよい。
+ */
+(() => {
+  'use strict';
+
+  // ===========================================================================
+  // ★★★ 本番では targetOrigin を必ず配信先ドメインに限定すること ★★★
+  //
+  // '*' のままだと、このゲームを iframe で埋め込んだ「任意の」ページが
+  // スコア・プレイ時間・行動ログを受け取れてしまう。
+  //
+  //   const PARENT_ORIGIN = 'https://media-example.jp';
+  //
+  // 複数メディアへ配信する場合は、配信時に生成する設定ファイル、または
+  // iframe の URL パラメータでオリジンを受け取り、許可リストと突き合わせてから
+  // 使う。URL パラメータをそのまま targetOrigin に渡してはいけない。
+  //
+  // 掲載テスト中は、どのメディアに貼られるか未確定のため '*' にしてある。
+  // ===========================================================================
+  const PARENT_ORIGIN = '*';
+  const AD_SOURCE = 'game-ad';
+
+  const embedded = window.parent !== window;
+
+  let campaign = 'unknown';
+  let sentFirstInteraction = false;
+  let startedAt = 0;
+
+  // ---- 親ページへ送る -------------------------------------------------------
+  function emit(event, data) {
+    const payload = {
+      source: AD_SOURCE,
+      campaign: campaign,
+      event: event,
+      data: data || {},
+      ts: Date.now(),
+    };
+    console.log('[game-ad] emit:', event, payload.data);
+    try {
+      if (embedded) window.parent.postMessage(payload, PARENT_ORIGIN);
+    } catch (e) {
+      console.warn('[game-ad] postMessage に失敗:', e);
+    }
+    // 直接開いたときにも確認できるよう、同一ドキュメント内にも流す
+    document.dispatchEvent(new CustomEvent('gamead:' + event, { detail: payload }));
+  }
+
+  // 「人間が最初にこのゲームに触った瞬間」。1回だけ送る。
+  function interaction(kind) {
+    if (sentFirstInteraction) return;
+    sentFirstInteraction = true;
+    emit('first_interaction', { kind: kind });
+  }
+
+  // ---- CTA ------------------------------------------------------------------
+  // iframe の中からリンクを踏んでも親ページを遷移させないことが重要。
+  // それを担保しているのは JS ではなく HTML 側の属性:
+  //   target="_blank"           → 新しいタブで開く（親フレームを書き換えない）
+  //   rel="noopener noreferrer" → 遷移先から window.opener 経由で操作されるのを防ぐ
+  // ここでは遷移を止めず、計測だけ行う。
+  function wireCta() {
+    const cta = document.getElementById('btnCta');
+    if (!cta) return;
+    cta.addEventListener('click', (e) => {
+      // プレイアブル広告版では <a href> ではなく <button data-href> に置き換わる
+      const href = cta.getAttribute('href') || cta.dataset.href || '';
+      emit('cta_click', {
+        href: href,
+        label: (cta.textContent || '').trim(),
+        placement: 'after_game',
+      });
+      // [Playable] 広告ネットワークの中ではリンク遷移も JS リダイレクトも禁止されており、
+      // ストアへ送るのはネットワークが提供する API の役目になる。
+      // playable/adapter.js が読み込まれているときだけ、そちらへ委譲する。
+      // iframe 配信版では __adNetworkCta が存在しないので、従来どおり <a> が働く。
+      if (typeof window.__adNetworkCta === 'function') {
+        e.preventDefault();
+        window.__adNetworkCta(href);
+      }
+    });
+  }
+
+  // ---- 公開 API -------------------------------------------------------------
+  window.AdSDK = {
+    /** ゲーム読み込み直後に1回だけ呼ぶ。 */
+    init(opts) {
+      const o = opts || {};
+      campaign = o.campaign || 'unknown';
+      wireCta();
+      emit('game_ready', {
+        embedded: embedded,
+        canvas: o.canvas || '720x720',
+        ua: navigator.userAgent,
+      });
+    },
+
+    /** ゲーム開始時に呼ぶ。 */
+    start(data) {
+      startedAt = performance.now();
+      emit('game_start', data || {});
+    },
+
+    /** ゲーム終了時に呼ぶ。playTimeMs は自動で足す。 */
+    complete(data) {
+      const d = Object.assign({}, data || {});
+      if (d.playTimeMs === undefined) {
+        d.playTimeMs = startedAt ? Math.round(performance.now() - startedAt) : 0;
+      }
+      emit('game_complete', d);
+    },
+
+    interaction: interaction,
+    emit: emit,
+    embedded: embedded,
+  };
+})();
+</script>
+<script>
+/* ---- ../shared/sfx.js ---- */
+/*
+ * sfx.js — Web Audio API の最小限のラッパー
+ *
+ * 効果音ファイルを持たず、その場で合成する。読み込むファイルが増えないので
+ * 広告として軽い。
+ *
+ * ★ AudioContext を作るのは SFX.unlock() の中だけ。
+ *   ゲーム側は必ず「ユーザーが開始ボタンを押した後」に呼ぶこと。
+ *   ページを開いただけで音が鳴る作りにしてはいけない（Autoplay Policy）。
+ */
+(() => {
+  'use strict';
+
+  let ac = null, master = null, noiseBuf = null;
+
+  function unlock() {
+    if (ac) {
+      if (ac.state === 'suspended' && ac.resume) ac.resume();
+      return;
+    }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    try {
+      ac = new AC();
+      master = ac.createGain();
+      master.gain.value = 0.28;
+      master.connect(ac.destination);
+      if (ac.state === 'suspended' && ac.resume) ac.resume();
+    } catch (e) {
+      ac = null; master = null;
+    }
+  }
+
+  function tone(freq, dur, type, gain, toFreq, delay) {
+    if (!ac) return;
+    const t = ac.currentTime + (delay || 0);
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, t);
+    if (toFreq) o.frequency.exponentialRampToValueAtTime(Math.max(20, toFreq), t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + Math.min(0.03, dur * 0.3));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(master);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+
+  function noise(dur, f0, f1, gain, delay) {
+    if (!ac) return;
+    const t = ac.currentTime + (delay || 0);
+    if (!noiseBuf) {
+      noiseBuf = ac.createBuffer(1, Math.floor(ac.sampleRate * 1.2), ac.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const s = ac.createBufferSource(); s.buffer = noiseBuf;
+    const bp = ac.createBiquadFilter(); bp.type = 'lowpass';
+    bp.frequency.setValueAtTime(f0, t);
+    bp.frequency.exponentialRampToValueAtTime(Math.max(60, f1), t + dur);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(bp); bp.connect(g); g.connect(master);
+    s.start(t); s.stop(t + dur + 0.05);
+  }
+
+  window.SFX = { unlock: unlock, tone: tone, noise: noise };
+})();
+</script>
+<script>
+/* ---- ./game.js ---- */
+/*
+ * すきまくぐり — タップで飛んで柱のすきまを抜ける
+ *
+ * 配信まわり（postMessage / CTA / 埋め込みコード）は ../shared/ad-sdk.js が持つ。
+ * このファイルはゲームの中身だけ。
+ */
+(() => {
+  'use strict';
+
+  const W = 720, H = 720;
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d', { alpha: false });
+
+  // ---- パラメータ ---------------------------------------------------------
+  const GROUND_Y = 636;
+  const BIRD_X   = 224;
+  const BIRD_R   = 22;
+  const GRAVITY  = 1560;
+  const FLAP_V   = -470;
+  const PIPE_W   = 98;
+  const GAP      = 214;
+  const SPEED    = 236;
+  const SPAWN_S  = 1.42;
+  const MARGIN   = 96;   // 柱のすきまが画面端に寄りすぎないように
+
+  const SKY_TOP = '#1d3f68', SKY_BOT = '#3d7fae';
+  const PIPE_A  = '#5aa64f', PIPE_B  = '#3f7d38';
+  const GROUND  = '#c8a86a', GROUND_D = '#a5854c';
+
+  // ---- 状態 ---------------------------------------------------------------
+  let mode = 'idle';        // idle | play | over
+  let raf = 0, lastT = 0;
+  let birdY, birdV, wing, dead;
+  let pipes, spawnT, scroll, score, best = 0;
+  let clouds = [];
+
+  function reset() {
+    birdY = 300; birdV = 0; wing = 0; dead = 0;
+    pipes = []; spawnT = 0.45; scroll = 0; score = 0;
+    clouds = [];
+    for (let i = 0; i < 5; i++) {
+      clouds.push({ x: Math.random() * W, y: 70 + Math.random() * 220,
+                    s: 26 + Math.random() * 30, v: 8 + Math.random() * 14 });
+    }
+  }
+
+  // ---- 入力 ---------------------------------------------------------------
+  function flap() {
+    if (mode !== 'play') return;
+    birdV = FLAP_V;
+    wing = 1;
+    SFX.tone(560, 0.09, 'square', 0.10, 760);
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    AdSDK.interaction(e.pointerType === 'touch' ? 'touch' : 'pointer');
+    flap();
+  });
+  window.addEventListener('keydown', (e) => {
+    const tag = e.target && e.target.tagName;
+    if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter') {
+      e.preventDefault();
+      AdSDK.interaction('keyboard');
+      flap();
+    }
+  });
+
+  // ---- 更新 ---------------------------------------------------------------
+  function spawnPipe() {
+    const gapY = MARGIN + GAP / 2 + Math.random() * (GROUND_Y - GAP - MARGIN * 2);
+    pipes.push({ x: W + PIPE_W, gapY: gapY, passed: false });
+  }
+
+  function hitPipe(p) {
+    // 円と矩形のあたり判定。上下2本ぶん見る。
+    const nx = Math.max(p.x, Math.min(BIRD_X, p.x + PIPE_W));
+    if (Math.abs(nx - BIRD_X) > BIRD_R) return false;
+    const top = p.gapY - GAP / 2, bot = p.gapY + GAP / 2;
+    const nyTop = Math.min(top, Math.max(0, birdY));
+    const nyBot = Math.max(bot, Math.min(GROUND_Y, birdY));
+    const dTop = Math.hypot(nx - BIRD_X, nyTop - birdY);
+    const dBot = Math.hypot(nx - BIRD_X, nyBot - birdY);
+    return dTop < BIRD_R || dBot < BIRD_R;
+  }
+
+  function gameOver() {
+    if (mode !== 'play') return;
+    mode = 'over';
+    if (score > best) best = score;
+    SFX.tone(300, 0.16, 'square', 0.14, 120);
+    SFX.noise(0.34, 900, 160, 0.14, 0.05);
+    document.body.dataset.state = 'done';
+    document.getElementById('after').hidden = false;
+    AdSDK.complete({ score: score, best: best, pipes: score });
+  }
+
+  function update(dt) {
+    scroll += SPEED * dt;
+    for (const c of clouds) {
+      c.x -= c.v * dt;
+      if (c.x < -c.s * 2) { c.x = W + c.s * 2; c.y = 70 + Math.random() * 220; }
+    }
+    if (mode !== 'play') return;
+
+    birdV += GRAVITY * dt;
+    birdY += birdV * dt;
+    if (wing > 0) wing = Math.max(0, wing - dt * 5);
+
+    spawnT -= dt;
+    if (spawnT <= 0) { spawnPipe(); spawnT = SPAWN_S; }
+
+    for (const p of pipes) {
+      p.x -= SPEED * dt;
+      if (!p.passed && p.x + PIPE_W < BIRD_X) {
+        p.passed = true;
+        score++;
+        SFX.tone(880, 0.09, 'sine', 0.11);
+        SFX.tone(1180, 0.10, 'sine', 0.09, null, 0.07);
+      }
+    }
+    pipes = pipes.filter((p) => p.x > -PIPE_W - 10);
+
+    if (birdY + BIRD_R >= GROUND_Y) { birdY = GROUND_Y - BIRD_R; gameOver(); return; }
+    if (birdY - BIRD_R < 0) { birdY = BIRD_R; birdV = 0; }
+    for (const p of pipes) if (hitPipe(p)) { gameOver(); return; }
+  }
+
+  // ---- 描画 ---------------------------------------------------------------
+  function drawBird() {
+    const rot = Math.max(-0.5, Math.min(1.1, birdV / 620));
+    ctx.save();
+    ctx.translate(BIRD_X, birdY);
+    ctx.rotate(rot);
+    ctx.fillStyle = '#f6d743';
+    ctx.beginPath(); ctx.arc(0, 0, BIRD_R, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#e8b62c';                       // 翼
+    ctx.beginPath();
+    ctx.ellipse(-4, 2 + wing * 7, 12, 7 - wing * 3, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';                          // 目
+    ctx.beginPath(); ctx.arc(9, -7, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#243049';
+    ctx.beginPath(); ctx.arc(11, -7, 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#f08a3c';                       // くちばし
+    ctx.beginPath();
+    ctx.moveTo(18, -1); ctx.lineTo(31, 3); ctx.lineTo(18, 8);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawPipe(p) {
+    const top = p.gapY - GAP / 2, bot = p.gapY + GAP / 2;
+    const lip = 26;
+    for (const seg of [[0, top], [bot, GROUND_Y - bot]]) {
+      const y = seg[0], h = seg[1];
+      if (h <= 0) continue;
+      ctx.fillStyle = PIPE_A;
+      ctx.fillRect(p.x, y, PIPE_W, h);
+      ctx.fillStyle = PIPE_B;
+      ctx.fillRect(p.x + PIPE_W - 16, y, 16, h);
+    }
+    ctx.fillStyle = PIPE_A;
+    ctx.fillRect(p.x - 7, top - lip, PIPE_W + 14, lip);
+    ctx.fillRect(p.x - 7, bot, PIPE_W + 14, lip);
+    ctx.fillStyle = PIPE_B;
+    ctx.fillRect(p.x + PIPE_W - 9, top - lip, 16, lip);
+    ctx.fillRect(p.x + PIPE_W - 9, bot, 16, lip);
+  }
+
+  function draw() {
+    const g = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+    g.addColorStop(0, SKY_TOP); g.addColorStop(1, SKY_BOT);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, GROUND_Y);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.16)';
+    for (const c of clouds) {
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.s, 0, Math.PI * 2);
+      ctx.arc(c.x + c.s * 0.8, c.y + 6, c.s * 0.72, 0, Math.PI * 2);
+      ctx.arc(c.x - c.s * 0.8, c.y + 8, c.s * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    for (const p of pipes) drawPipe(p);
+
+    ctx.fillStyle = GROUND;
+    ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+    ctx.fillStyle = GROUND_D;
+    ctx.fillRect(0, GROUND_Y, W, 9);
+    for (let x = -((scroll * 0.6) % 56); x < W; x += 56) {
+      ctx.fillRect(x, GROUND_Y + 22, 30, 6);
+    }
+
+    drawBird();
+
+    // スコア
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.font = '800 68px system-ui, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(String(score), W / 2 + 3, 111);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(String(score), W / 2, 108);
+
+    if (mode === 'over') {
+      ctx.fillStyle = 'rgba(13,16,23,0.55)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#fff';
+      ctx.font = '800 46px system-ui, sans-serif';
+      ctx.fillText('くぐった数 ' + score, W / 2, H / 2 - 16);
+      ctx.font = '600 22px system-ui, sans-serif';
+      ctx.fillStyle = '#b9c6d6';
+      ctx.fillText('最高 ' + best, W / 2, H / 2 + 22);
+    }
+  }
+
+  // ---- ループ -------------------------------------------------------------
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0.001, (now - lastT) / 1000));
+    lastT = now;
+    update(dt);
+    draw();
+    raf = requestAnimationFrame(frame);
+  }
+
+  function startGame() {
+    reset();
+    mode = 'play';
+    document.body.dataset.state = 'playing';
+    lastT = performance.now();
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(frame);
+    flap();
+    AdSDK.start({});
+  }
+
+  // ---- 画面まわり ---------------------------------------------------------
+  const startScreen = document.getElementById('start');
+  const afterBar = document.getElementById('after');
+  startScreen.hidden = false;
+
+  document.getElementById('btnPlay').addEventListener('click', () => {
+    AdSDK.interaction('start_button');
+    SFX.unlock();                 // 音の初期化はここだけ = 必ずユーザー操作の後
+    startScreen.hidden = true;
+    afterBar.hidden = true;
+    startGame();
+  });
+  document.getElementById('btnReplay').addEventListener('click', () => {
+    afterBar.hidden = true;
+    startGame();
+  });
+
+  // 開始前も静止画を出しておく（枠が真っ黒にならないように）
+  reset();
+  draw();
+
+  AdSDK.init({ campaign: 'flappy', title: 'ゲーム広告：すきまくぐり' });
+})();
+</script>
+/body>
+</html>

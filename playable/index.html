@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>プレイアブル広告の掲載イメージ｜ゲーム広告</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="../shared/page.css">
+<style>
+  .cols { display: flex; gap: 34px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 8px; }
+  .col-phone { flex: 0 0 auto; }
+  .col-side { flex: 1 1 320px; min-width: 280px; }
+
+  /* --- 端末フレーム（縦型フィードの見え方を再現する） --- */
+  .phone {
+    width: 320px; aspect-ratio: 9 / 19.5;
+    background: #000; border: 8px solid #222933; border-radius: 34px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, .25);
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 104px; height: 21px; background: #222933;
+    border-radius: 0 0 13px 13px; z-index: 5;
+  }
+  /* 広告本体。下 58px はフィード側のバーが使うので、その上で終わらせる。
+     ここを全面にすると、広告自身の CTA がバーの下に隠れる。 */
+  .slot { position: absolute; top: 0; left: 0; right: 0; bottom: 58px; }
+  .slot iframe { width: 100%; height: 100%; border: 0; display: block; background: #0d1017; }
+
+  /* フィードの装飾。特定サービスの UI ではなく、縦型フィード一般のイメージ */
+  .chrome { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+  .chrome .tabs {
+    position: absolute; top: 28px; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 18px;
+    font-size: 12px; color: rgba(255,255,255,.55); text-shadow: 0 1px 3px rgba(0,0,0,.7);
+  }
+  .chrome .tabs .on { color: #fff; font-weight: 700; }
+  .chrome .rail {
+    position: absolute; right: 9px; bottom: 224px;
+    display: flex; flex-direction: column; gap: 16px; align-items: center;
+  }
+  .chrome .rail i {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.2);
+  }
+  .chrome .caption {
+    position: absolute; left: 12px; right: 56px; bottom: 172px;
+    font-size: 11.5px; line-height: 1.5; color: rgba(255,255,255,.92);
+    text-shadow: 0 1px 4px rgba(0,0,0,.85);
+  }
+  .chrome .sponsor {
+    display: inline-block; font-size: 9.5px; letter-spacing: .04em;
+    padding: 1px 6px; border: 1px solid rgba(255,255,255,.5); border-radius: 2px; margin-bottom: 5px;
+  }
+  /* フィード側のインストールバー（広告素材の外側。ネットワークが出す部分） */
+  .installbar {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 11px 14px; background: rgba(0,0,0,.84);
+  }
+  .installbar .icon { width: 32px; height: 32px; border-radius: 8px; background: #f5b544; flex: 0 0 auto; }
+  .installbar .txt { flex: 1 1 auto; font-size: 11px; line-height: 1.35; color: #fff; }
+  .installbar .txt b { display: block; font-size: 12px; }
+  .installbar .txt span { color: rgba(255,255,255,.6); }
+  .installbar button {
+    flex: 0 0 auto; font: inherit; font-size: 12px; font-weight: 700;
+    padding: 7px 14px; border: 0; border-radius: 4px;
+    background: #f5b544; color: #1b2436; cursor: pointer;
+  }
+  /* ストア遷移の代わりに出すお知らせ */
+  #storeOverlay {
+    position: absolute; inset: 0; z-index: 10; display: none;
+    background: rgba(0,0,0,.88); color: #fff;
+    flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 22px; font-size: 12.5px; line-height: 1.8;
+  }
+  #storeOverlay[data-on="1"] { display: flex; }
+  #storeOverlay b { font-size: 14px; color: #f5b544; }
+  #storeOverlay code { background: rgba(255,255,255,.12); color: #ffd894; }
+  #storeOverlay button {
+    margin-top: 14px; font: inherit; font-size: 12px; padding: 7px 16px;
+    background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.4);
+    border-radius: 4px; cursor: pointer;
+  }
+
+  /* --- 右側のコントロール --- */
+  .pick { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 6px; }
+  .pick button {
+    font: inherit; font-size: 13px; padding: 7px 13px; cursor: pointer;
+    background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 4px;
+  }
+  .pick button:hover { border-color: #b9c0c9; }
+  .pick button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .pick-note { font-size: 12.5px; color: var(--muted); margin: 0 0 22px; }
+  .pick-note code { font-size: .9em; }
+
+  #log {
+    background: #12161c; border-radius: 6px; padding: 9px 11px;
+    height: 210px; overflow: auto; color: #d6dde6;
+    font-family: ui-monospace, Consolas, monospace; font-size: 11px; line-height: 1.65;
+  }
+  #log .l { border-bottom: 1px solid #1d232c; padding: 3px 0; }
+  #log .l:last-child { border-bottom: 0; }
+  #log .t { color: #5b6673; }
+  #log .hit { color: #7ee08a; font-weight: 700; }
+  #log .ev { color: #f5b544; }
+  #log .dim { color: #8b95a1; }
+
+  .sizes td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .bar { display: block; height: 4px; background: var(--line); border-radius: 2px; margin-top: 4px; }
+  .bar > span { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top__inner">
+    <p class="eyebrow"><a href="../">← 掲載メニューへ戻る</a></p>
+    <h1>SNS のフィードで遊べる広告（プレイアブル広告）</h1>
+    <p class="lede">
+      記事に貼る iframe 版と同じゲームを、TikTok や Meta の縦型フィードの中で
+      その場で遊べる形にしたものです。下の端末の中で実際にプレイできます。
+    </p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2><span class="num">1</span>掲載イメージ</h2>
+  <p>
+    フィードの見た目は特定サービスの UI を再現したものではなく、縦型フィード一般のイメージです。
+    ストアへの遷移は起きません（何が呼ばれたかをログに出します）。
+  </p>
+
+  <div class="cols">
+    <div class="col-phone">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="slot">
+          <iframe id="ad" title="プレイアブル広告のプレビュー"></iframe>
+        </div>
+        <div class="chrome">
+          <div class="tabs"><span>フォロー中</span><span class="on">おすすめ</span></div>
+          <div class="rail"><i></i><i></i><i></i></div>
+          <div class="caption">
+            <span class="sponsor">スポンサー</span><br>
+            <span id="capName">—</span>
+          </div>
+        </div>
+        <div class="installbar">
+          <div class="icon"></div>
+          <div class="txt"><b id="barName">—</b><span>ゲーム・無料</span></div>
+          <button type="button" id="installBtn">インストール</button>
+        </div>
+        <div id="storeOverlay">
+          <b id="storeTitle"></b>
+          <div id="storeBody"></div>
+          <button type="button" id="storeClose">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-side">
+      <h3>ゲームを選ぶ</h3>
+      <div class="pick" id="pickGame"></div>
+      <p class="pick-note">記事に貼る iframe 版と同じ4本を、そのまま単体 HTML 化しています。</p>
+
+      <h3>配信先ネットワークを選ぶ</h3>
+      <div class="pick" id="pickNet"></div>
+      <p class="pick-note">
+        いま用意されている SDK: <code id="nowNet">なし</code><br>
+        ゲームを終えて「詳しくはこちら」を押すと、選んだ配信先の API が呼ばれます。
+      </p>
+
+      <h3>広告の中で起きたこと</h3>
+      <div id="log"><div class="l dim">ゲームを操作すると、ここにイベントが出ます。</div></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>なぜ配信先を選ぶ必要があるのか</strong>
+    プレイアブル広告は、ストアへ送る手段がネットワークごとに違います。
+    ここでは各社の SDK を広告枠の中に模擬的に用意し、<strong>同じ1ファイルが配信先を見分けて
+    正しい API を呼び分けること</strong>を確認できるようにしています。ゲーム側に配信先の判定は書いていません。
+  </div>
+
+  <h2><span class="num">2</span>記事に貼る iframe 版との違い</h2>
+  <table>
+    <tbody>
+      <tr><th style="width:26%">　</th><th style="width:37%">記事に貼る iframe 版</th><th>プレイアブル広告版</th></tr>
+      <tr><th>掲載先</th><td>Web メディアの記事本文</td><td>SNS・アプリの広告枠</td></tr>
+      <tr><th>渡し方</th><td>iframe のコードを1個渡す</td><td>ファイルを1つ入稿する</td></tr>
+      <tr><th>ファイル構成</th><td>HTML・JS・画像に分かれる</td><td><strong>単体 HTML 1枚</strong>（全部内包）</td></tr>
+      <tr><th>外部通信</th><td>自由</td><td><strong>禁止</strong>（1リクエストも出せない）</td></tr>
+      <tr><th>遷移</th><td>新しいタブでリンクを開く</td><td><strong>リンク遷移も JS リダイレクトも禁止</strong>。ネットワークの API を呼ぶ</td></tr>
+      <tr><th>表示比率</th><td>正方形（1:1）</td><td>縦向き（Meta は縦向き必須）</td></tr>
+    </tbody>
+  </table>
+
+  <h2><span class="num">3</span>実測サイズと入稿ファイル</h2>
+  <p>
+    各社が定めている上限に対して、実際にどれだけ使っているかです。
+    <strong>いずれも上限のごく一部</strong>で収まっており、画像や音を足す余地が十分にあります。
+    外部リクエストは全ゲーム 0 件で、ビルド時に自動チェックしています。
+  </p>
+  <table class="sizes">
+    <thead>
+      <tr>
+        <th style="width:34%">ゲーム</th>
+        <th>単体 HTML<br><span style="font-weight:400;color:var(--muted)">上限 2MB（Meta）</span></th>
+        <th>zip<br><span style="font-weight:400;color:var(--muted)">上限 5MB（TikTok）</span></th>
+        <th style="width:18%">入稿ファイル</th>
+      </tr>
+    </thead>
+    <tbody id="sizeRows">
+      <tr><td colspan="4" style="color:var(--muted)">読み込み中…</td></tr>
+    </tbody>
+  </table>
+
+  <h2><span class="num">4</span>先に確認が必要なこと</h2>
+  <div class="note">
+    <strong>この枠は「アプリ広告」の枠です</strong>
+    TikTok のプレイアブル広告は App Promotion 目的（アプリインストール等）に限定されており、
+    Meta も同様にアプリ広告の枠です。<strong>ストアに実在するアプリが必要</strong>なため、
+    Web の LP へ誘導する案件ではこの枠を使えない可能性があります。
+    広告主の目的がインストール獲得か Web 誘導かによって、この形式が使えるかどうかが変わります。
+  </div>
+  <ul>
+    <li>入稿前に、Meta の Playable Preview Tool（開発者向け・無料）で仕様と CTA 実装を検証します。</li>
+    <li>TikTok の <code>window.openAppStore()</code> は外部 SDK 経由と案内されている一方、同社は外部リクエストを禁止しています。
+        コンテナ側が注入する前提として script タグは埋め込んでいません。入稿時に要確認です。</li>
+    <li>現在は開始画面を1枚挟む構成です。接触時間の短い枠では不利な可能性があるため、
+        即プレイ開始版との比較を検討しています。</li>
+    <li>実機（iOS / Android）での縦向き表示・タッチ・音は未確認です。</li>
+  </ul>
+  <p style="font-size:13px;color:var(--muted)">
+    仕様の出典:
+    <a href="https://www.facebook.com/business/help/412951382532338">Meta 公式仕様</a> /
+    <a href="https://ads.tiktok.com/help/article/playable-ads?lang=en">TikTok 公式ヘルプ</a>
+  </p>
+
+  <footer>
+    <p><a href="../">掲載メニューへ戻る</a>　|　<a href="../guide/">掲載の手引き</a></p>
+    <p>ビルド日時: <code id="builtAt">—</code></p>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var frame = document.getElementById('ad');
+  var logEl = document.getElementById('log');
+  var overlay = document.getElementById('storeOverlay');
+  var oTitle = document.getElementById('storeTitle');
+  var oBody = document.getElementById('storeBody');
+  var nowNet = document.getElementById('nowNet');
+  var capName = document.getElementById('capName');
+  var barName = document.getElementById('barName');
+
+  var NETS = [
+    { id: 'none', label: 'SDKなし', api: 'なし（単体で開いた状態）' },
+    { id: 'meta', label: 'Meta', api: 'window.FbPlayableAd.onCTAClick()' },
+    { id: 'tiktok', label: 'TikTok', api: 'window.openAppStore()' },
+    { id: 'mraid', label: 'MRAID系', api: 'window.mraid.open(url)' }
+  ];
+
+  var games = [];
+  var currentGame = null;
+  var currentNet = 'none';
+  var empty = true;
+
+  function log(html, cls) {
+    if (empty) { logEl.innerHTML = ''; empty = false; }
+    var t = new Date().toLocaleTimeString('ja-JP', { hour12: false });
+    var row = document.createElement('div');
+    row.className = 'l';
+    row.innerHTML = '<span class="t">' + t + '</span> <span class="' + (cls || 'ev') + '">' + html + '</span>';
+    logEl.insertBefore(row, logEl.firstChild);
+  }
+
+  function showStore(title, body) {
+    oTitle.textContent = title;
+    oBody.innerHTML = body;
+    overlay.dataset.on = '1';
+  }
+  document.getElementById('storeClose').addEventListener('click', function () {
+    overlay.dataset.on = '0';
+  });
+
+  // ------------------------------------------------------------------
+  // ネットワークの SDK を、広告枠（iframe）の中に模擬的に用意する。
+  // 本番ではネットワークのコンテナがこれを注入する。
+  // アダプタは「クリック時」に判定しているので、読み込み直さなくても切り替わる。
+  // ------------------------------------------------------------------
+  function installShim(net) {
+    var w;
+    try { w = frame.contentWindow; } catch (e) { return; }
+    if (!w) return;
+    try { delete w.FbPlayableAd; } catch (e) { w.FbPlayableAd = undefined; }
+    try { delete w.openAppStore; } catch (e) { w.openAppStore = undefined; }
+    try { delete w.mraid; } catch (e) { w.mraid = undefined; }
+
+    if (net === 'meta') {
+      w.FbPlayableAd = { onCTAClick: function () {
+        log('Meta の API が呼ばれた → FbPlayableAd.onCTAClick()', 'hit');
+        showStore('ストアが開きます',
+          'Meta のコンテナが <code>FbPlayableAd.onCTAClick()</code> を受け取り、<br>広告に設定されたストアへ遷移します。');
+      } };
+    } else if (net === 'tiktok') {
+      w.openAppStore = function () {
+        log('TikTok の API が呼ばれた → window.openAppStore()', 'hit');
+        showStore('ストアが開きます',
+          'TikTok のコンテナが <code>window.openAppStore()</code> を受け取り、<br>App Store / Google Play へ遷移します。');
+      };
+    } else if (net === 'mraid') {
+      w.mraid = { open: function (url) {
+        log('MRAID の API が呼ばれた → mraid.open()', 'hit');
+        showStore('ストアが開きます',
+          'MRAID 対応ネットワーク（Unity / AppLovin など）が<br><code>mraid.open()</code> を受け取り、指定 URL を開きます。');
+      } };
+    }
+    for (var i = 0; i < NETS.length; i++) {
+      if (NETS[i].id === net) nowNet.textContent = NETS[i].api;
+    }
+  }
+
+  function selectGame(g) {
+    currentGame = g;
+    capName.textContent = g.name;
+    barName.textContent = g.name;
+    frame.src = './build/' + g.id + '.html';
+    overlay.dataset.on = '0';
+    Array.prototype.forEach.call(document.querySelectorAll('#pickGame button'), function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.id === g.id));
+    });
+  }
+
+  function buildPickers() {
+    var pg = document.getElementById('pickGame');
+    games.forEach(function (g) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.id = g.id;
+      b.textContent = g.name;
+      b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', function () { selectGame(g); });
+      pg.appendChild(b);
+    });
+
+    var pn = document.getElementById('pickNet');
+    NETS.forEach(function (n) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = n.label;
+      b.setAttribute('aria-pressed', String(n.id === 'none'));
+      b.addEventListener('click', function () {
+        currentNet = n.id;
+        Array.prototype.forEach.call(pn.querySelectorAll('button'), function (x) {
+          x.setAttribute('aria-pressed', String(x === b));
+        });
+        installShim(currentNet);
+        log('配信先を切り替えた: ' + n.label, 'dim');
+      });
+      pn.appendChild(b);
+    });
+  }
+
+  function kb(n) { return (n / 1024).toFixed(1) + ' KB'; }
+
+  function fillSizes() {
+    var tb = document.getElementById('sizeRows');
+    tb.innerHTML = '';
+    games.forEach(function (g) {
+      var pct = g.htmlBytes * 100 / g.metaLimitBytes;
+      var pctZip = g.zipBytes * 100 / g.tiktokLimitBytes;
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + g.name + '</td>' +
+        '<td class="num">' + kb(g.htmlBytes) + '（' + pct.toFixed(1) + '%）' +
+          '<span class="bar"><span style="width:' + Math.max(pct, 0.6) + '%"></span></span></td>' +
+        '<td class="num">' + kb(g.zipBytes) + '（' + pctZip.toFixed(1) + '%）' +
+          '<span class="bar"><span style="width:' + Math.max(pctZip, 0.6) + '%"></span></span></td>' +
+        '<td><a href="./build/' + g.id + '.html">HTML</a> / ' +
+            '<a href="./build/' + g.id + '-playable.zip">zip</a></td>';
+      tb.appendChild(tr);
+    });
+  }
+
+  frame.addEventListener('load', function () {
+    installShim(currentNet);
+    if (currentGame) log('広告素材を読み込んだ（' + currentGame.id + '.html）', 'dim');
+  });
+
+  document.getElementById('installBtn').addEventListener('click', function () {
+    log('フィード側のインストールボタン（広告素材の外側）', 'dim');
+    showStore('ストアが開きます', 'こちらは広告素材ではなく、<br>フィード側が表示しているボタンです。');
+  });
+
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (!d || d.source !== 'game-ad') return;
+    if (d.event === 'cta_dispatch') {
+      if (d.data.network === 'none') {
+        log('CTA が押されたが、委譲先の SDK がない', 'dim');
+        showStore('ここでストアが開きます',
+          'いまは SDK が無い状態です。<br>右で配信先を選ぶと、各社の API が実際に呼ばれます。');
+      }
+      return;
+    }
+    log('<b>' + d.event + '</b> ' + JSON.stringify(d.data).slice(0, 140));
+  });
+
+  // ビルド結果（実測サイズ）を読む
+  fetch('./build/manifest.json', { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (m) {
+      games = m.games;
+      document.getElementById('builtAt').textContent = m.builtAt;
+      buildPickers();
+      fillSizes();
+      selectGame(games[0]);
+    })
+    .catch(function () {
+      document.getElementById('sizeRows').innerHTML =
+        '<tr><td colspan="4">ビルド結果を読み込めませんでした（<code>python tools/build-playable.py</code> を実行してください）。</td></tr>';
+    });
+})();
+</script>
+</body>
+</html>

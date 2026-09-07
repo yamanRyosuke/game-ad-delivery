@@ -72,12 +72,22 @@
   function wireCta() {
     const cta = document.getElementById('btnCta');
     if (!cta) return;
-    cta.addEventListener('click', () => {
+    cta.addEventListener('click', (e) => {
+      // プレイアブル広告版では <a href> ではなく <button data-href> に置き換わる
+      const href = cta.getAttribute('href') || cta.dataset.href || '';
       emit('cta_click', {
-        href: cta.getAttribute('href'),
+        href: href,
         label: (cta.textContent || '').trim(),
         placement: 'after_game',
       });
+      // [Playable] 広告ネットワークの中ではリンク遷移も JS リダイレクトも禁止されており、
+      // ストアへ送るのはネットワークが提供する API の役目になる。
+      // playable/adapter.js が読み込まれているときだけ、そちらへ委譲する。
+      // iframe 配信版では __adNetworkCta が存在しないので、従来どおり <a> が働く。
+      if (typeof window.__adNetworkCta === 'function') {
+        e.preventDefault();
+        window.__adNetworkCta(href);
+      }
     });
   }
 

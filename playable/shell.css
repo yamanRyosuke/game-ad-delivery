@@ -1,0 +1,73 @@
+/*
+ * shell.css — プレイアブル広告版だけに足す外枠
+ *
+ * 記事に貼る iframe 配信版は正方形（1:1）で統一しているが、
+ * プレイアブル広告は Meta が「縦向き（portrait）かつレスポンシブ」を必須にしている。
+ * canvas は 720x720 のままなので、縦長の画面では上下に余白が出る。
+ * その余白を使って CTA を大きく置くのが以下の指定。
+ *
+ * 注意: #start と #after は #stage の中に絶対配置されている（shared/game.css）。
+ * ここで position を通常フローに戻すと、#stage を flex にした瞬間に
+ * canvas の「横」へ回り込む。絶対配置のまま扱うこと。
+ */
+:root {
+  /* CTA バーの高さ。canvas の下に必ずこの分の余白を確保する。
+     終了前から場所を空けておくことで、CTA 出現時に画面が動かない。 */
+  --cta-h: 96px;
+}
+
+html, body { height: 100%; }
+body {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/* 正方形の canvas を、CTA バーの分を除いた領域の中央に置く */
+#stage {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  padding-bottom: var(--cta-h);
+}
+#game {
+  width: min(100vw, calc(100vh - var(--cta-h)));
+  height: min(100vw, calc(100vh - var(--cta-h)));
+  max-width: 100%;
+}
+
+/* CTA バー。canvas の上に重ねるのではなく、下に確保した余白へ置く。
+   縦長画面では canvas の外に出した方が押しやすく、誤タップも減る。 */
+#after {
+  height: var(--cta-h);
+  box-sizing: border-box;
+  padding: 0 16px calc(env(safe-area-inset-bottom, 0px));
+  background: #0d1017;
+  flex-wrap: nowrap;
+}
+#btnCta {
+  flex: 1 1 auto;
+  max-width: 320px;
+  text-align: center;
+  padding: 14px 20px;
+  font-size: clamp(15px, 4.2vw, 18px);
+}
+#btnReplay { flex: 0 0 auto; }
+
+/* 横向きで開かれたときも破綻させない。
+   TikTok は config.json で縦固定にするが、Meta のプレビューや
+   実機の回転までは保証されないため、横でも成立させておく。 */
+@media (orientation: landscape) {
+  #stage { padding-bottom: 0; }
+  #game { width: min(720px, 100vw, 100vh); height: min(720px, 100vw, 100vh); }
+  #after {
+    height: auto;
+    padding: 16px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to top, rgba(13, 16, 23, .96), rgba(13, 16, 23, 0));
+    flex-wrap: wrap;
+  }
+}

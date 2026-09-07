@@ -1,0 +1,57 @@
+{
+  "builtAt": "2026-09-07 19:55",
+  "games": [
+    {
+      "id": "suika",
+      "name": "くだものおとし",
+      "htmlBytes": 29168,
+      "zipBytes": 11158,
+      "metaLimitBytes": 2097152,
+      "tiktokLimitBytes": 5242880,
+      "inlinedCss": 1,
+      "inlinedJs": 3,
+      "inlinedAssets": 0,
+      "assetBytes": 0,
+      "problems": []
+    },
+    {
+      "id": "flappy",
+      "name": "すきまくぐり",
+      "htmlBytes": 26387,
+      "zipBytes": 10027,
+      "metaLimitBytes": 2097152,
+      "tiktokLimitBytes": 5242880,
+      "inlinedCss": 1,
+      "inlinedJs": 3,
+      "inlinedAssets": 0,
+      "assetBytes": 0,
+      "problems": []
+    },
+    {
+      "id": "runner",
+      "name": "とびこえランナー",
+      "htmlBytes": 26664,
+      "zipBytes": 10246,
+      "metaLimitBytes": 2097152,
+      "tiktokLimitBytes": 5242880,
+      "inlinedCss": 1,
+      "inlinedJs": 3,
+      "inlinedAssets": 0,
+      "assetBytes": 0,
+      "problems": []
+    },
+    {
+      "id": "campaign001",
+      "name": "あの板、2人乗れた説",
+      "htmlBytes": 36943,
+      "zipBytes": 14343,
+      "metaLimitBytes": 2097152,
+      "tiktokLimitBytes": 5242880,
+      "inlinedCss": 0,
+      "inlinedJs": 1,
+      "inlinedAssets": 1,
+      "assetBytes": 831,
+      "problems": []
+    }
+  ]
+}

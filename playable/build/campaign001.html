@@ -1,3 +1,234 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<!--
+  プレイアブル広告版（単体 HTML）: あの板、2人乗れた説
+  tools/build-playable.py が生成したもの。直接編集しないこと。
+  直すのは campaign001/ と shared/ と playable/ の側。
+  ビルド日時: 2026-09-07 19:55:22
+-->
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>あの板、2人乗れた説</title>
+
+<style>
+  html, body { margin: 0; padding: 0; background: #0a1224; overflow: hidden; }
+  body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh;
+    font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  #stage { position: relative; line-height: 0; }
+  #game {
+    display: block;
+    width: min(720px, 100vw, 100vh);
+    height: min(720px, 100vw, 100vh);
+    /* pan-y = 縦方向のスクロールはブラウザに任せ、タップはゲームが受け取る。
+       none にすると canvas の上で親ページを縦スクロールできなくなり、
+       スマホで「広告に指が吸い付いて記事が読めない」状態になる。 */
+    touch-action: pan-y;
+    background: #0a1224;
+  }
+  #start {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(10, 18, 36, 0.92);
+    line-height: 1.6;
+  }
+  #start[hidden], #after[hidden] { display: none; }
+  #btnCta { display: inline-block; text-decoration: none; box-sizing: border-box; }
+  #start .card { width: min(88%, 520px); text-align: center; color: #f2ecdd; }
+  #start h1 { margin: 0 0 12px; font-size: clamp(20px, 5.2vw, 30px); font-weight: 700; }
+  #start p { margin: 0 0 20px; font-size: clamp(12px, 3.1vw, 15px); color: #a8bacd; }
+  #start .btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  button, #btnCta {
+    font: inherit; font-size: clamp(13px, 3.4vw, 16px); font-weight: 700;
+    padding: 12px 20px; border: 1px solid #4d7dae; border-radius: 0;
+    background: #16283f; color: #f2ecdd; cursor: pointer;
+  }
+  /* 終了後のバー。canvas の下ではなく上に重ねる（iframe で切れないように） */
+  #after {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;
+    padding: 16px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+    line-height: 1.6;
+    background: linear-gradient(to top, rgba(10, 18, 36, 0.96), rgba(10, 18, 36, 0));
+  }
+  #btnCta { background: #f2b45c; color: #16283f; border-color: #f2b45c; }
+</style>
+<style>
+/* ---- playable/shell.css ---- */
+/*
+ * shell.css — プレイアブル広告版だけに足す外枠
+ *
+ * 記事に貼る iframe 配信版は正方形（1:1）で統一しているが、
+ * プレイアブル広告は Meta が「縦向き（portrait）かつレスポンシブ」を必須にしている。
+ * canvas は 720x720 のままなので、縦長の画面では上下に余白が出る。
+ * その余白を使って CTA を大きく置くのが以下の指定。
+ *
+ * 注意: #start と #after は #stage の中に絶対配置されている（shared/game.css）。
+ * ここで position を通常フローに戻すと、#stage を flex にした瞬間に
+ * canvas の「横」へ回り込む。絶対配置のまま扱うこと。
+ */
+:root {
+  /* CTA バーの高さ。canvas の下に必ずこの分の余白を確保する。
+     終了前から場所を空けておくことで、CTA 出現時に画面が動かない。 */
+  --cta-h: 96px;
+}
+
+html, body { height: 100%; }
+body {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/* 正方形の canvas を、CTA バーの分を除いた領域の中央に置く */
+#stage {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  padding-bottom: var(--cta-h);
+}
+#game {
+  width: min(100vw, calc(100vh - var(--cta-h)));
+  height: min(100vw, calc(100vh - var(--cta-h)));
+  max-width: 100%;
+}
+
+/* CTA バー。canvas の上に重ねるのではなく、下に確保した余白へ置く。
+   縦長画面では canvas の外に出した方が押しやすく、誤タップも減る。 */
+#after {
+  height: var(--cta-h);
+  box-sizing: border-box;
+  padding: 0 16px calc(env(safe-area-inset-bottom, 0px));
+  background: #0d1017;
+  flex-wrap: nowrap;
+}
+#btnCta {
+  flex: 1 1 auto;
+  max-width: 320px;
+  text-align: center;
+  padding: 14px 20px;
+  font-size: clamp(15px, 4.2vw, 18px);
+}
+#btnReplay { flex: 0 0 auto; }
+
+/* 横向きで開かれたときも破綻させない。
+   TikTok は config.json で縦固定にするが、Meta のプレビューや
+   実機の回転までは保証されないため、横でも成立させておく。 */
+@media (orientation: landscape) {
+  #stage { padding-bottom: 0; }
+  #game { width: min(720px, 100vw, 100vh); height: min(720px, 100vw, 100vh); }
+  #after {
+    height: auto;
+    padding: 16px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to top, rgba(13, 16, 23, .96), rgba(13, 16, 23, 0));
+    flex-wrap: wrap;
+  }
+}
+</style>
+</head>
+<body data-state="ready">
+<div id="stage">
+  <canvas id="game" width="720" height="720"></canvas>
+  <div id="start" hidden>
+    <div class="card">
+      <h1>あの板、2人乗れた説</h1>
+      <p>板の上をタップすると、その場所に人が乗る。2人で5秒。<br>（キーボードは Space / Enter）</p>
+      <div class="btns">
+        <button id="btnPlay">自分で遊ぶ</button>
+        <button id="btnAuto">自動プレイを見る</button>
+      </div>
+    </div>
+  </div>
+  <div id="after" hidden>
+    <button id="btnReplay">もう一回</button>
+    
+    <button id="btnCta" data-href="https://example.com/lp/campaign001">詳しくはこちら</button>
+  </div>
+</div>
+
+<script>
+/* ---- playable/adapter.js ---- */
+/*
+ * adapter.js — プレイアブル広告版だけに入る、CTA の委譲先アダプタ
+ *
+ * プレイアブル広告は「広告ネットワークのコンテナの中で動く単体 HTML」なので、
+ * ストアへ送る手段がネットワークごとに違う。ゲーム側にネットワーク判定を書くと
+ * 配信先が増えるたびにゲームを触ることになるため、ここで吸収する。
+ *
+ *   Meta     window.FbPlayableAd.onCTAClick()
+ *   TikTok   window.openAppStore()
+ *   MRAID系  window.mraid.open(url)      … Unity / AppLovin / ironSource など
+ *   なし     親へ postMessage するだけ    … 掲載イメージのページ / 単体で開いたとき
+ *
+ * 判定は「読み込み時」ではなく「クリック時」に行う。ネットワークの SDK は
+ * コンテナ側があとから注入することがあり、起動時点ではまだ存在しないため。
+ *
+ * このファイルは iframe 配信版（各ゲームの index.html）には入らない。
+ * 入るのは tools/build-playable.py が生成した単体 HTML だけ。
+ */
+(function () {
+  'use strict';
+
+  function detect() {
+    if (window.FbPlayableAd && typeof window.FbPlayableAd.onCTAClick === 'function') return 'meta';
+    if (typeof window.openAppStore === 'function') return 'tiktok';
+    if (window.mraid && typeof window.mraid.open === 'function') return 'mraid';
+    return 'none';
+  }
+
+  function notify(network, href, handled) {
+    var payload = {
+      source: 'game-ad',
+      event: 'cta_dispatch',
+      data: { network: network, href: href, handled: handled },
+      ts: Date.now()
+    };
+    console.log('[playable] CTA →', network, handled ? '(ネットワークAPIへ委譲)' : '(委譲先なし)');
+    try {
+      if (window.parent && window.parent !== window) window.parent.postMessage(payload, '*');
+    } catch (e) { /* コンテナがクロスオリジンでも落とさない */ }
+    document.dispatchEvent(new CustomEvent('gamead:cta_dispatch', { detail: payload }));
+  }
+
+  window.__adNetworkCta = function (href) {
+    var network = detect();
+    switch (network) {
+      case 'meta':
+        window.FbPlayableAd.onCTAClick();
+        break;
+      case 'tiktok':
+        window.openAppStore();
+        break;
+      case 'mraid':
+        window.mraid.open(href);
+        break;
+      default:
+        // ここで location を書き換えたくなるが、やってはいけない。
+        // TikTok は JS リダイレクトを明示的に禁止しており、審査で弾かれる。
+        // 遷移させるかどうかは、埋め込んでいる側の責任にする。
+        break;
+    }
+    notify(network, href, network !== 'none');
+  };
+
+  window.__adNetwork = detect;
+})();
+</script>
+<script>
+/* ---- インライン化したアセット（外部リクエスト禁止のため） ---- */
+window.__INLINE_ASSETS__ = {"./assets/test-image.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAADBklEQVR42u3dy20bQRCEYUXhGJzFRqAMlIrT8VEnhSMnIPjkBGTwQGBBkIvha7Yf36Hu7K4fojjTXfPy+uv9m/rqRRMAoBEAIAAQAAgABAACwEo/fi6UWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMwC4PfnF0N26NWuABwKuSRGz+nVbgBsFQSCeb3aBYCRgkAwp1cAAAAAADARgGsKOurfx1s74w8139Krcn8BDo04qpP5R7X/Clg3owMEp/UC4KQhlSE4V2tJAEYhONeQqhBs1VruHGAEgq2GVINgpNZyJ4HnYBhpRDUIbqm5zF3AvY3IDkGEmkNdB3eCIEqt4eYBOkAQqcaQAyGVIYhWW9iJoIoQRKwp9EhYJQii1hJ+JrACBJFrSDEUmhmC6J89zVRwRggyfOZUY+GZIMjyWdPtBWRobCZQUy6GRG5wtq+qtJtBERud8f+U1KthkRqe9ZdK+t3ACI3P/DO1xHLongZkP6gqsx28hxEVTilLrYfPNKTKPUW5fIAZxlS6pCoZEPFMg6pdU5dNCHmGURVnFEpHxDzSsKpTSuUzgh5hXOURtRYhUfcYWH1ItU1KGPPFxDFfTuDCfEGRC/MlhS7MFxW7tDdfVvADIJAVDAAA+AoAgH8CAeBnIAAcBAHAUbCjYJdBLoNcB7sONhBiIMRImJEwQ6GGQo2FGwu3GGIxxGqY1TDLoZZDrYdbDxcQISBCRIyIGCFRQqLExImJExQpKFJUrKhYYdHCosXFi4v3YIQHIzwZ48kYj0Z5NMqzca2fjfNwZOOHIz0d2/jpWI9HN3882vPxDZ+PPxRySR3MvwaCrV6lBGCroBEIqpg/AsFIr1IBMFLQFgTVzN+C4JpetQCgqvmXIABAI/PPQVAOgGsKWkPQxfw1BLf0qtxfgG7Gz+4VAAAAAAAEPQfobv6MXoU9CWT8nF6Fugtg9PxexZ0I+vuHVuo3EsZ0ABAACAAEALIbSAAgABAACAAEAIoCANUWAACgCQAgABAACAAEAGql/5+cGLnS0FtSAAAAAElFTkSuQmCC"};
+</script>
+<script>
+/* ---- ./js/game.js ---- */
 /*
  * あの板、2人乗れた説 — ゲーム本体
  *
@@ -683,3 +914,6 @@
     ua: navigator.userAgent,
   });
 })();
+</script>
+</body>
+</html>
