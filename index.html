@@ -6,22 +6,57 @@
 <title>ゲーム広告メニュー</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="./shared/page.css">
+<style>
+  /* --- 配信形式のタブ ---
+     3つの形式（記事内 iframe / SNS プレイアブル / ディスプレイ広告枠）は
+     並列の選択肢なので、縦に積むと下のものが読まれない。タブで横に並べる。
+     JS が無い環境では3つとも展開されたままになる（下の script が hidden を付ける）。 */
+  .tabs {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    border-bottom: 2px solid var(--line); margin: 0 0 30px;
+  }
+  .tabs button {
+    font: inherit; cursor: pointer; text-align: left;
+    background: none; border: 0; border-bottom: 3px solid transparent;
+    padding: 11px 15px 12px; margin-bottom: -2px;
+    color: var(--muted); border-radius: 5px 5px 0 0;
+  }
+  .tabs button b { display: block; font-size: 14.5px; font-weight: 700; }
+  .tabs button small { display: block; font-size: 11.5px; margin-top: 3px; opacity: .9; }
+  .tabs button:hover { background: var(--soft); color: var(--ink); }
+  .tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .tabs button[aria-selected="true"]:hover { background: none; }
+
+  .panel[hidden] { display: none; }
+  .panel > h2:first-child { margin-top: 0; }
+</style>
 </head>
 <body>
 
 <header class="top">
   <div class="top__inner">
     <p class="eyebrow">掲載メニュー</p>
-    <h1>記事に差し込めるゲーム広告</h1>
+    <h1>ゲームを広告として掲載する</h1>
     <p class="lede">
-      記事の本文中に <code>&lt;iframe&gt;</code> タグ1個で差し込めるゲームです。
-      画像・スクリプト・音はすべて当方のサーバーから配信するため、御社側での開発・ファイル設置は不要です。
-      下のプレビューはその場で遊べます。
+      同じゲームを、掲載先に合わせて3つの形式で用意しています。
+      画像・スクリプト・音はすべて当方で用意するため、御社側での開発・ファイル設置は不要です。
+      下のタブで形式を切り替えてください。どの形式もその場で遊べます。
     </p>
   </div>
 </header>
 
 <div class="wrap">
+
+  <div class="tabs" role="tablist" aria-label="配信形式">
+    <button type="button" role="tab" id="tab-iframe" aria-controls="panel-iframe" data-key="iframe"
+            aria-selected="true"><b>記事に埋め込む</b><small>Web メディアの記事本文に iframe で</small></button>
+    <button type="button" role="tab" id="tab-playable" aria-controls="panel-playable" data-key="playable"
+            aria-selected="false"><b>SNS のフィードで遊ぶ</b><small>TikTok・Meta のプレイアブル広告</small></button>
+    <button type="button" role="tab" id="tab-display" aria-controls="panel-display" data-key="display"
+            aria-selected="false"><b>ディスプレイ広告枠</b><small>300×250 などのバナー枠に入る HTML5</small></button>
+  </div>
+
+  <section class="panel" id="panel-iframe" role="tabpanel" aria-labelledby="tab-iframe">
 
   <h2><span class="num">1</span>ゲームを選ぶ</h2>
   <p>
@@ -72,32 +107,70 @@
     </tbody>
   </table>
 
-  <h2><span class="num">4</span>SNS のフィードで遊べる版</h2>
+  </section>
+
+  <section class="panel" id="panel-playable" role="tabpanel" aria-labelledby="tab-playable">
+
+  <h2>SNS のフィードの中で、そのまま遊べる形式</h2>
   <p>
-    同じゲームを、TikTok や Meta の縦型フィードの中でその場で遊べる
-    <strong>プレイアブル広告</strong>の形式にしたものも用意しています。
+    TikTok や Meta の縦型フィードに流れてくる広告の中で、その場で遊べます。
     記事に貼る iframe 版と違い、<strong>単体 HTML 1枚に画像・スクリプトまで内包</strong>し、
-    外部への通信を一切行わない形式です（各社の審査要件のため）。
+    外部への通信を一切行いません（各社の審査要件のため）。
   </p>
   <p>
-    <a class="cta-link" href="./playable/">プレイアブル広告の掲載イメージを見る</a>
+    <a class="cta-link" href="./playable/">掲載イメージを見る</a>
   </p>
+
+  <table>
+    <tbody>
+      <tr><th style="width:26%">掲載先</th><td>TikTok / Meta の縦型フィード（アプリの中）</td></tr>
+      <tr><th>目的の制限</th><td><strong>アプリ広告の枠</strong>。ストアに実在するアプリが必要</td></tr>
+      <tr><th>渡すもの</th><td>単体 HTML 1枚（Meta）／ zip 1つ（TikTok）</td></tr>
+      <tr><th>表示サイズ</th><td>縦向き（Meta は縦向き必須）</td></tr>
+      <tr><th>実測サイズ</th><td>25.8〜36.1KB。Meta の上限 2MB に対して 1.3〜1.8%</td></tr>
+      <tr><th>遷移先</th><td>ネットワークの API 経由でストアへ。<strong>任意の URL は指定できません</strong></td></tr>
+    </tbody>
+  </table>
+
   <div class="note">
-    <strong>この枠はアプリ広告の枠です</strong>
-    TikTok・Meta のプレイアブル広告はアプリのインストール獲得を目的とした枠で、
-    ストアに実在するアプリが必要になります。Web の LP へ誘導する案件では、
-    上の iframe 版をご検討ください。
+    <strong>アプリをお持ちでない場合は使えません</strong>
+    TikTok のプレイアブル広告はアプリのインストール獲得を目的とした枠に限定されており、Meta も同様です。
+    クリック時に呼ばれる API が URL を受け取らない仕組みのため、商品ページなど Web への誘導はできません。
+    その場合は「記事に埋め込む」か「ディスプレイ広告枠」をご検討ください。
   </div>
 
-  <h2><span class="num">5</span>ディスプレイ広告枠で配信する版</h2>
+  </section>
+
+  <section class="panel" id="panel-display" role="tabpanel" aria-labelledby="tab-display">
+
+  <h2>普通のバナー枠に入る、遊べる HTML5 素材</h2>
   <p>
-    同じゲームを、<strong>普通のディスプレイ広告枠</strong>（300×250 などのバナー枠）に入る
-    HTML5 素材にしたものです。プレイアブル広告と違って<strong>アプリ広告の枠に限定されず</strong>、
-    Web サイトへの誘導を目的とした配信に使えます。
+    300×250 などの<strong>一般的なディスプレイ広告枠</strong>に、そのまま入る形式です。
+    プレイアブル広告と違って<strong>アプリ広告の枠に限定されず</strong>、
+    商品ページなど Web サイトへの誘導を目的とした配信に使えます。
   </p>
   <p>
-    <a class="cta-link" href="./display/">ディスプレイ広告の掲載イメージを見る</a>
+    <a class="cta-link" href="./display/">掲載イメージを見る</a>
   </p>
+
+  <table>
+    <tbody>
+      <tr><th style="width:26%">掲載先</th><td>一般の Web サイトのバナー枠（Google ディスプレイなど）</td></tr>
+      <tr><th>目的の制限</th><td><strong>なし。</strong>Web サイトへの誘導に使えます</td></tr>
+      <tr><th>渡すもの</th><td>zip 1つ（広告サイズごと）</td></tr>
+      <tr><th>対応サイズ</th><td>300×250 / 336×280 / 250×250 / 300×600 / 320×480</td></tr>
+      <tr><th>実測サイズ</th><td>最大 13.4KB。Google Ads の上限 600KB に対して 2.2%</td></tr>
+      <tr><th>遷移先</th><td><code>clickTag</code> 経由で<strong>任意の URL</strong>へ。クリック計測もそのまま取れます</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>帯サイズ（728×90 など）は対象外です</strong>
+    正方形のゲームが入らないためです。遊べないものを無理に押し込むより、
+    その枠は静止画のティザーにして誘導先へ送る形をお勧めします。
+  </div>
+
+  </section>
 
   <footer>
     <p>掲載のご相談・不具合のご連絡は担当までお願いします。</p>
@@ -199,6 +272,46 @@
 
   document.getElementById('shape').textContent = snippet(GAMES[0]);
   document.getElementById('originFoot').textContent = location.host;
+})();
+</script>
+
+<script>
+(() => {
+  'use strict';
+
+  // タブ。パネルは HTML 上では出しっぱなしにしてあり、ここで初めて hidden を付ける。
+  // JS が動かない環境では3形式が縦に並ぶだけで、読めなくなることはない。
+  const tabs = Array.from(document.querySelectorAll('.tabs button'));
+  const panels = tabs.map(t => document.getElementById(t.getAttribute('aria-controls')));
+
+  function select(i, opts) {
+    const o = opts || {};
+    tabs.forEach((t, j) => {
+      const on = i === j;
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+      panels[j].hidden = !on;
+    });
+    if (o.focus) tabs[i].focus();
+    // URL に形式を残す。担当者へ「この形式を見てください」と直接リンクを送れる。
+    if (o.hash && history.replaceState) {
+      history.replaceState(null, '', '#' + tabs[i].dataset.key);
+    }
+  }
+
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => select(i, { hash: true }));
+    t.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      const next = (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+      select(next, { focus: true, hash: true });
+    });
+  });
+
+  const key = (location.hash || '').slice(1);
+  const found = tabs.findIndex(t => t.dataset.key === key);
+  select(found < 0 ? 0 : found, {});
 })();
 </script>
 

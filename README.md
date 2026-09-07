@@ -5,7 +5,8 @@
 **メディア担当者に渡すのはこの URL → https://yamanryosuke.github.io/game-ad-delivery/**
 
 ```
-/                  ゲームメニュー。プレビュー付きで、ゲームごとに埋め込みコードをコピーできる
+/                  掲載メニュー。3つの配信形式（記事内 iframe / SNS プレイアブル /
+                   ディスプレイ広告枠）をタブで出し分ける。#iframe #playable #display で直リンク可
 /guide/            掲載の手引き（貼り方・確認・トラブル切り分け・sandbox・計測）
 /preview/          記事に埋め込んだ掲載イメージ。?game=suika などで中身を切り替えられる
 /playable/         SNS のフィード内で遊べる「プレイアブル広告」版（掲載イメージと単体HTML）
