@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTML5 ディスプレイ広告の掲載イメージ｜ゲーム広告</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="../shared/page.css">
+<style>
+  .cols { display: flex; gap: 30px; align-items: flex-start; flex-wrap: wrap; }
+  .col-page { flex: 1 1 420px; min-width: 320px; }
+  .col-side { flex: 0 1 300px; min-width: 260px; }
+
+  /* --- 記事ページの再現（広告が置かれる場所を見せるためだけの飾り） --- */
+  .site {
+    background: #fff; border: 1px solid var(--line); border-radius: 6px;
+    padding: 22px 24px 26px; font-size: 13.5px; line-height: 1.95; color: #3b434d;
+  }
+  .site h3.art { font-size: 17px; margin: 0 0 4px; color: var(--ink); line-height: 1.4; }
+  .site .byline { font-size: 11.5px; color: var(--muted); margin: 0 0 16px; }
+  .site p { margin: 0 0 1.1em; }
+  .site .skeleton { background: var(--soft); border-radius: 3px; height: 11px; margin: 0 0 9px; }
+  .site .skeleton.s2 { width: 88%; }
+  .site .skeleton.s3 { width: 94%; }
+
+  /* 広告枠。実寸で置く。点線が素材の外形。 */
+  .adslot { margin: 22px 0 24px; text-align: center; }
+  .adslot__label {
+    font-size: 10px; letter-spacing: .08em; color: #9aa3ad;
+    text-align: left; margin: 0 0 4px;
+  }
+  .adslot__box {
+    display: inline-block; position: relative;
+    outline: 1px dashed #c3cad3; outline-offset: 3px;
+    background: #0d1017; line-height: 0;
+  }
+  .adslot__box iframe { display: block; border: 0; }
+  .adslot__size {
+    position: absolute; top: -3px; right: -3px; transform: translateY(-100%);
+    font-size: 10px; color: #9aa3ad; letter-spacing: .04em;
+  }
+
+  /* --- コントロール --- */
+  .pick { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 4px; }
+  .pick button {
+    font: inherit; font-size: 12.5px; padding: 6px 11px; cursor: pointer;
+    background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 4px;
+  }
+  .pick button:hover { border-color: #b9c0c9; }
+  .pick button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .pick button small { display: block; font-size: 10.5px; color: var(--muted); font-weight: 400; }
+  .pick button[aria-pressed="true"] small { color: var(--accent); }
+  .side-note { font-size: 12px; color: var(--muted); margin: 0 0 20px; }
+  h3.side { margin: 0 0 8px; font-size: 13px; }
+  h3.side:not(:first-child) { margin-top: 4px; }
+
+  #log {
+    background: #12161c; border-radius: 6px; padding: 9px 11px;
+    height: 150px; overflow: auto; color: #d6dde6;
+    font-family: ui-monospace, Consolas, monospace; font-size: 11px; line-height: 1.6;
+  }
+  #log .l { border-bottom: 1px solid #1d232c; padding: 3px 0; }
+  #log .l:last-child { border-bottom: 0; }
+  #log .t { color: #5b6673; }
+  #log .hit { color: #7ee08a; font-weight: 700; }
+  #log .ev { color: #f5b544; }
+  #log .dim { color: #8b95a1; }
+
+  .sizes td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .bar { display: block; height: 4px; background: var(--line); border-radius: 2px; margin-top: 4px; }
+  .bar > span { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
+  .ok { color: #2e7d43; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top__inner">
+    <p class="eyebrow"><a href="../">← 掲載メニューへ戻る</a></p>
+    <h1>HTML5 ディスプレイ広告</h1>
+    <p class="lede">
+      同じゲームを、普通のディスプレイ広告枠に入る形式にしたものです。
+      プレイアブル広告と違って<strong>アプリ広告の枠に限定されず</strong>、
+      Web サイトへの誘導を目的とした配信に使えます。
+    </p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2><span class="num">1</span>掲載イメージ</h2>
+  <p>
+    記事の中に広告枠が置かれた状態です。<strong>広告は実寸（1:1）で表示</strong>しており、
+    点線が素材の外形です。枠の中でそのまま遊べます。
+  </p>
+
+  <div class="cols">
+    <div class="col-page">
+      <div class="site">
+        <h3 class="art">板の上に2人は乗れるのか、実際にやってみた話</h3>
+        <p class="byline">2026年9月7日・サンプル記事</p>
+        <p>
+          海に浮かべた一枚の板。ひとりが乗るぶんには、なんとかなる。では、ふたりならどうか。
+          直感的には「揺めれば凌げそう」と思ってしまうのだが、実際にやってみると事情が違ってくる。
+        </p>
+        <div class="skeleton"></div>
+        <div class="skeleton s2"></div>
+        <div class="skeleton s3"></div>
+
+        <div class="adslot">
+          <p class="adslot__label">広告</p>
+          <div class="adslot__box" id="adBox">
+            <span class="adslot__size" id="adSize">—</span>
+            <iframe id="ad" title="HTML5 ディスプレイ広告のプレビュー" scrolling="no"></iframe>
+          </div>
+        </div>
+
+        <p>
+          バランスの問題もある。ふたりが同じ側に立てば板は傾き、傾けば足元は滑る。
+          左右に離れて立てば釣り合うが、今度は板を挟んで立ち位置が遠い。
+        </p>
+        <div class="skeleton"></div>
+        <div class="skeleton s3"></div>
+        <div class="skeleton s2"></div>
+      </div>
+    </div>
+
+    <div class="col-side">
+      <h3 class="side">ゲームを選ぶ</h3>
+      <div class="pick" id="pickGame"></div>
+      <p class="side-note">記事に貼る iframe 版と同じ4本です。</p>
+
+      <h3 class="side">広告サイズを選ぶ</h3>
+      <div class="pick" id="pickSize"></div>
+      <p class="side-note">
+        いまの素材: <code id="nowSlug">—</code><br>
+        <a id="openRaw" href="#">この素材を単体で開く</a>
+      </p>
+
+      <h3 class="side">広告の中で起きたこと</h3>
+      <div id="log"><div class="l dim">ゲームを操作すると、ここにイベントが出ます。</div></div>
+      <p class="side-note" style="margin-top:8px">
+        CTA を押すと <code>clickTag</code> が呼ばれます。このページでは実際にタブを開かず、
+        呼ばれた URL をログに出しています。
+      </p>
+    </div>
+  </div>
+
+  <h2><span class="num">2</span>サイズごとの実測</h2>
+  <p>
+    Google Ads の上限は <strong>zip 600KB・40ファイル以内</strong>です。
+    プレイアブル広告（2MB / 5MB）よりかなり厳しいのですが、
+    このゲームは Canvas への手描きだけで作っていて画像をほとんど持たないため、
+    <strong>上限の数パーセント</strong>で収まっています。
+  </p>
+  <table class="sizes">
+    <thead>
+      <tr>
+        <th style="width:30%">ゲーム</th>
+        <th style="width:16%">サイズ</th>
+        <th>zip（上限 600KB）</th>
+        <th style="width:14%">ファイル数</th>
+        <th style="width:12%">入稿</th>
+      </tr>
+    </thead>
+    <tbody id="sizeRows">
+      <tr><td colspan="5" style="color:var(--muted)">読み込み中…</td></tr>
+    </tbody>
+  </table>
+
+  <h2><span class="num">3</span>入稿要件への対応</h2>
+  <table>
+    <tbody>
+      <tr>
+        <th style="width:30%"><code>ad.size</code> メタタグ</th>
+        <td>各素材の <code>&lt;head&gt;</code> に <code>&lt;meta name="ad.size" content="width=300,height=250"&gt;</code> を出力。寸法が実サイズと一致しているかをビルド時に検証しています</td>
+      </tr>
+      <tr>
+        <th><code>clickTag</code></th>
+        <td>アドサーバーが遷移先と計測用 URL を差し替えるための変数です。難読化・圧縮すると読めなくなるため、<code>var clickTag = "…";</code> の素直な形のまま出力しています</td>
+      </tr>
+      <tr>
+        <th>遷移先の直リンク</th>
+        <td>なし。<code>&lt;a href="https://…"&gt;</code> が残っているとアドサーバーを通さない直リンクになり、クリック計測が取れなくなるため、CTA は <code>clickTag</code> を開くボタンに置き換えています</td>
+      </tr>
+      <tr>
+        <th>外部リクエスト</th>
+        <td>0件。ディスプレイ広告では禁止されていませんが、素材をすべて内包しているため通信が発生しません</td>
+      </tr>
+      <tr>
+        <th>クリック領域</th>
+        <td>素材の全面ではなく CTA ボタンだけを出口にしています。全面をクリック領域にすると、ゲームを操作するタップまで遷移になってしまうためです（全面クリックを要求するアドサーバーもあるため、入稿時に要確認）</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2><span class="num">4</span>先に確認が必要なこと</h2>
+  <div class="note">
+    <strong>Google Ads で HTML5 を直接入稿するには、アカウントの条件があります</strong>
+    アカウント開設から 90日以上、かつ総額 9,000 USD 以上の利用実績と、ポリシー違反の履歴がないことが条件です。
+    広告主・代理店のアカウントであれば通常は満たしていますが、新規アカウントではすぐには入稿できません。
+    DV360 や第三者アドサーバー経由であればこの条件は関係ありません。
+  </div>
+  <ul>
+    <li><strong>帯サイズ（728×90・320×50・160×600 など）は対象外にしています。</strong>
+        正方形のゲームが入らないためです。無理に押し込んで遊べないものを出すより、
+        その枠は静止画のティザーにして LP へ送る形を勧めます。</li>
+    <li>実機（iOS / Android）での表示・タッチ・音は未確認です。</li>
+    <li>アドサーバーによってはバックアップ画像（静止画）の同梱を求められます。未対応です。</li>
+  </ul>
+  <p style="font-size:13px;color:var(--muted)">
+    仕様の出典:
+    <a href="https://support.google.com/google-ads/answer/1722096?hl=ja">アップロード済みディスプレイ広告の仕様（Google Ads）</a> /
+    <a href="https://support.google.com/displayvideo/answer/10261241?hl=ja">HTML5 クリエイティブのガイドライン（DV360）</a>
+  </p>
+
+  <footer>
+    <p><a href="../">掲載メニューへ戻る</a>　|　<a href="../playable/">プレイアブル広告版</a>　|　<a href="../guide/">掲載の手引き</a></p>
+    <p>ビルド日時: <code id="builtAt">—</code></p>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var frame = document.getElementById('ad');
+  var adBox = document.getElementById('adBox');
+  var adSize = document.getElementById('adSize');
+  var logEl = document.getElementById('log');
+  var nowSlug = document.getElementById('nowSlug');
+  var openRaw = document.getElementById('openRaw');
+
+  var data = null;
+  var gameId = null;
+  var sizeKey = null;
+  var empty = true;
+
+  function log(html, cls) {
+    if (empty) { logEl.innerHTML = ''; empty = false; }
+    var t = new Date().toLocaleTimeString('ja-JP', { hour12: false });
+    var row = document.createElement('div');
+    row.className = 'l';
+    row.innerHTML = '<span class="t">' + t + '</span> <span class="' + (cls || 'ev') + '">' + html + '</span>';
+    logEl.insertBefore(row, logEl.firstChild);
+  }
+
+  function creative() {
+    for (var i = 0; i < data.creatives.length; i++) {
+      var c = data.creatives[i];
+      if (c.game === gameId && (c.w + 'x' + c.h) === sizeKey) return c;
+    }
+    return null;
+  }
+
+  function apply() {
+    var c = creative();
+    if (!c) return;
+    frame.width = c.w;
+    frame.height = c.h;
+    frame.style.width = c.w + 'px';
+    frame.style.height = c.h + 'px';
+    adBox.style.width = c.w + 'px';
+    adBox.style.height = c.h + 'px';
+    adSize.textContent = c.w + ' × ' + c.h;
+    nowSlug.textContent = c.slug + '.html';
+    openRaw.href = './build/' + c.slug + '.html';
+    frame.src = './build/' + c.slug + '.html';
+
+    Array.prototype.forEach.call(document.querySelectorAll('#pickGame button'), function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.id === gameId));
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#pickSize button'), function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.key === sizeKey));
+    });
+  }
+
+  function buildPickers() {
+    var pg = document.getElementById('pickGame');
+    data.games.forEach(function (g) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.id = g.id;
+      b.textContent = g.name;
+      b.addEventListener('click', function () { gameId = g.id; apply(); });
+      pg.appendChild(b);
+    });
+
+    var ps = document.getElementById('pickSize');
+    data.sizes.forEach(function (s) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.key = s.w + 'x' + s.h;
+      b.innerHTML = s.w + '×' + s.h + '<small>' + s.name + '</small>';
+      b.title = s.note;
+      b.addEventListener('click', function () { sizeKey = s.w + 'x' + s.h; apply(); });
+      ps.appendChild(b);
+    });
+  }
+
+  function kb(n) { return (n / 1024).toFixed(1) + ' KB'; }
+
+  function fillTable() {
+    var tb = document.getElementById('sizeRows');
+    tb.innerHTML = '';
+    data.creatives.forEach(function (c) {
+      var pct = c.zipBytes * 100 / c.zipLimitBytes;
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + c.gameName + '</td>' +
+        '<td>' + c.w + '×' + c.h + '</td>' +
+        '<td class="num">' + kb(c.zipBytes) + '（' + pct.toFixed(1) + '%）' +
+          '<span class="bar"><span style="width:' + Math.max(pct, 0.5) + '%"></span></span></td>' +
+        '<td class="num">' + c.files + ' / ' + c.fileLimit + '</td>' +
+        '<td>' + (c.problems.length ? '<span style="color:#b3261e">NG</span>'
+                                    : '<span class="ok">OK</span>') +
+          ' <a href="./build/' + c.slug + '.zip">zip</a></td>';
+      tb.appendChild(tr);
+    });
+  }
+
+  // 広告素材の中の window.open を横取りして、タブを開かずログに出す。
+  // 実際の配信では、ここでアドサーバーが計測を挟んで遷移先を開く。
+  frame.addEventListener('load', function () {
+    var w;
+    try { w = frame.contentWindow; } catch (e) { return; }
+    if (!w) return;
+    w.open = function (url) {
+      log('clickTag が呼ばれた → ' + url, 'hit');
+      return null;
+    };
+    var c = creative();
+    if (c) log('広告素材を読み込んだ（' + c.slug + '.html / clickTag = ' + c.clickTag + '）', 'dim');
+  });
+
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (!d || d.source !== 'game-ad' || d.event === 'cta_dispatch') return;
+    log('<b>' + d.event + '</b> ' + JSON.stringify(d.data).slice(0, 120));
+  });
+
+  fetch('./build/manifest.json', { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (m) {
+      data = m;
+      document.getElementById('builtAt').textContent = m.builtAt;
+      gameId = m.games[0].id;
+      sizeKey = m.sizes[0].w + 'x' + m.sizes[0].h;
+      buildPickers();
+      fillTable();
+      apply();
+    })
+    .catch(function () {
+      document.getElementById('sizeRows').innerHTML =
+        '<tr><td colspan="5">ビルド結果を読み込めませんでした（<code>python tools/build-display.py</code> を実行してください）。</td></tr>';
+    });
+})();
+</script>
+</body>
+</html>

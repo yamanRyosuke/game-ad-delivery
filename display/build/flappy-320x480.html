@@ -2,14 +2,21 @@
 <html lang="ja">
 <head>
 <!--
-  プレイアブル広告版（単体 HTML）: とびこえランナー
-  tools/build-playable.py が生成したもの。直接編集しないこと。
-  直すのは runner/ と shared/ と playable/ の側。
+  HTML5 ディスプレイ広告版: すきまくぐり（320x480）
+  tools/build-display.py が生成したもの。直接編集しないこと。
+  直すのは flappy/ と shared/ と display/ の側。
   ビルド日時: 2026-09-07 20:35:07
 -->
+<meta name="ad.size" content="width=320,height=480">
+<script>
+/* clickTag: アドサーバーが遷移先と計測用 URL を差し替えるための変数。
+   難読化・圧縮してはいけない（アドサーバーが読めなくなる）。
+   ここに書いてある URL は、差し替えられなかったときの保険。 */
+var clickTag = "https://example.com/lp/flappy";
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>とびこえランナー｜ゲーム広告</title>
+<title>すきまくぐり｜ゲーム広告</title>
 <style>
 /* ---- ../shared/game.css ---- */
 /*
@@ -86,80 +93,32 @@ button:hover { background: #243049; }
    どのゲームの CSS でも同じ見た目になるよう、あちら側で完結させてある。 */
 </style>
 <style>
-/* ---- playable/shell.css ---- */
-/*
- * shell.css — プレイアブル広告版だけに足す外枠
- *
- * 記事に貼る iframe 配信版は正方形（1:1）で統一しているが、
- * プレイアブル広告は Meta が「縦向き（portrait）かつレスポンシブ」を必須にしている。
- * canvas は 720x720 のままなので、縦長の画面では上下に余白が出る。
- * その余白を使って CTA を大きく置くのが以下の指定。
- *
- * 注意: #start と #after は #stage の中に絶対配置されている（shared/game.css）。
- * ここで position を通常フローに戻すと、#stage を flex にした瞬間に
- * canvas の「横」へ回り込む。絶対配置のまま扱うこと。
- */
-:root {
-  /* CTA バーの高さ。canvas の下に必ずこの分の余白を確保する。
-     終了前から場所を空けておくことで、CTA 出現時に画面が動かない。 */
-  --cta-h: 96px;
-}
+/* ---- HTML5 ディスプレイ広告 320x480 用の外枠 ---- */
+/* 広告枠は 320x480 の固定サイズ。はみ出すとスクロールバーが出て審査に落ちる。 */
+html, body { width: 320px; height: 480px; overflow: hidden; }
 
-html, body { height: 100%; }
-body {
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-}
+/* 枠が小さいぶん、開始画面の文字とボタンを詰める */
+#start .card { width: 94%; }
+#start h1 { font-size: 19px; margin: 0 0 6px; }
+#start p  { font-size: 12px; margin: 0 0 12px; line-height: 1.5; }
+#start .btns { gap: 8px; }
+button, #btnCta { font-size: 13px; padding: 8px 12px; }
 
-/* 正方形の canvas を、CTA バーの分を除いた領域の中央に置く */
+/* 縦長サイズ。canvas の下に CTA バーを置く場所がある。
+   終了前から場所を空けておくことで、CTA 出現時に画面が動かない。 */
+body { flex-direction: column; align-items: stretch; justify-content: flex-start; }
 #stage {
-  position: relative;
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 0;
-  padding-bottom: var(--cta-h);
+  position: relative; flex: 1 1 auto;
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: 0; padding-bottom: 60px;
 }
-#game {
-  width: min(100vw, calc(100vh - var(--cta-h)));
-  height: min(100vw, calc(100vh - var(--cta-h)));
-  max-width: 100%;
-}
-
-/* CTA バー。canvas の上に重ねるのではなく、下に確保した余白へ置く。
-   縦長画面では canvas の外に出した方が押しやすく、誤タップも減る。 */
+#game { width: min(100vw, calc(100vh - 60px)); height: min(100vw, calc(100vh - 60px)); }
 #after {
-  height: var(--cta-h);
-  box-sizing: border-box;
-  padding: 0 16px calc(env(safe-area-inset-bottom, 0px));
-  background: #0d1017;
-  flex-wrap: nowrap;
+  height: 60px; box-sizing: border-box;
+  padding: 0 10px; background: #0d1017; flex-wrap: nowrap; gap: 8px;
 }
-#btnCta {
-  flex: 1 1 auto;
-  max-width: 320px;
-  text-align: center;
-  padding: 14px 20px;
-  font-size: clamp(15px, 4.2vw, 18px);
-}
+#btnCta { flex: 1 1 auto; max-width: 190px; text-align: center; }
 #btnReplay { flex: 0 0 auto; }
-
-/* 横向きで開かれたときも破綻させない。
-   TikTok は config.json で縦固定にするが、Meta のプレビューや
-   実機の回転までは保証されないため、横でも成立させておく。 */
-@media (orientation: landscape) {
-  #stage { padding-bottom: 0; }
-  #game { width: min(720px, 100vw, 100vh); height: min(720px, 100vw, 100vh); }
-  #after {
-    height: auto;
-    padding: 16px 12px calc(16px + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(to top, rgba(13, 16, 23, .96), rgba(13, 16, 23, 0));
-    flex-wrap: wrap;
-  }
-}
 </style>
 </head>
 <body data-state="ready">
@@ -168,83 +127,63 @@ body {
 
   <div id="start" hidden>
     <div class="card">
-      <h1>とびこえランナー</h1>
-      <p>タップでジャンプ。障害物をよけて走り続ける。<br>（キーボードは Space / Enter）</p>
+      <h1>すきまくぐり</h1>
+      <p>タップで上に飛ぶ。柱のすきまを抜けていく。<br>（キーボードは Space / Enter）</p>
       <div class="btns"><button id="btnPlay">はじめる</button></div>
     </div>
   </div>
 
   <div id="after" hidden>
     <button id="btnReplay">もう一回</button>
-    <button id="btnCta" data-href="https://example.com/lp/runner">詳しくはこちら</button>
+    <button id="btnCta" data-href="https://example.com/lp/flappy">詳しくはこちら</button>
   </div>
 </div>
 <script>
-/* ---- playable/adapter.js ---- */
+/* ---- display/adapter.js ---- */
 /*
- * adapter.js — プレイアブル広告版だけに入る、CTA の委譲先アダプタ
+ * adapter.js — HTML5 ディスプレイ広告版だけに入る、CTA の委譲先アダプタ
  *
- * プレイアブル広告は「広告ネットワークのコンテナの中で動く単体 HTML」なので、
- * ストアへ送る手段がネットワークごとに違う。ゲーム側にネットワーク判定を書くと
- * 配信先が増えるたびにゲームを触ることになるため、ここで吸収する。
+ * ディスプレイ広告のクリックは clickTag を通す決まりになっている。
+ * clickTag は「アドサーバーが遷移先と計測用 URL を差し替えるための変数」で、
+ * 素材の中に遷移先をハードコードしてしまうと、
  *
- *   Meta     window.FbPlayableAd.onCTAClick()
- *   TikTok   window.openAppStore()
- *   MRAID系  window.mraid.open(url)      … Unity / AppLovin / ironSource など
- *   なし     親へ postMessage するだけ    … 掲載イメージのページ / 単体で開いたとき
+ *   ・クリック計測が通らない（何回押されたか分からない）
+ *   ・入稿後に遷移先を差し替えられない（素材を作り直すことになる）
  *
- * 判定は「読み込み時」ではなく「クリック時」に行う。ネットワークの SDK は
- * コンテナ側があとから注入することがあり、起動時点ではまだ存在しないため。
+ * という2つが同時に起きる。だから window.open(clickTag) の形にする。
  *
- * このファイルは iframe 配信版（各ゲームの index.html）には入らない。
- * 入るのは tools/build-playable.py が生成した単体 HTML だけ。
+ * プレイアブル広告版（playable/adapter.js）とは事情が違う点に注意。
+ * あちらは遷移そのものが禁止でネットワークの API を呼ぶ。こちらは普通に開く。
+ *
+ * なお、素材の全面を <a> で包む書き方もよく使われるが、ここでは使っていない。
+ * 全面がクリック領域になると、ゲームを操作するタップまで遷移になってしまう。
+ * 遊べる素材では CTA ボタンを出口にするのが正しい。
+ * （アドサーバーによっては全面クリックを要求されることがあるため、入稿時に要確認）
  */
 (function () {
   'use strict';
 
-  function detect() {
-    if (window.FbPlayableAd && typeof window.FbPlayableAd.onCTAClick === 'function') return 'meta';
-    if (typeof window.openAppStore === 'function') return 'tiktok';
-    if (window.mraid && typeof window.mraid.open === 'function') return 'mraid';
-    return 'none';
-  }
-
-  function notify(network, href, handled) {
+  window.__adNetworkCta = function (href) {
+    var url = (typeof window.clickTag === 'string' && window.clickTag) || href;
+    var opened = null;
+    try {
+      opened = window.open(url, '_blank');
+    } catch (e) {
+      console.warn('[display] window.open に失敗:', e);
+    }
     var payload = {
       source: 'game-ad',
       event: 'cta_dispatch',
-      data: { network: network, href: href, handled: handled },
+      data: { network: 'clickTag', href: url, handled: true },
       ts: Date.now()
     };
-    console.log('[playable] CTA →', network, handled ? '(ネットワークAPIへ委譲)' : '(委譲先なし)');
+    console.log('[display] CTA → clickTag:', url);
     try {
       if (window.parent && window.parent !== window) window.parent.postMessage(payload, '*');
-    } catch (e) { /* コンテナがクロスオリジンでも落とさない */ }
+    } catch (e) { /* 掲載先がクロスオリジンでも落とさない */ }
     document.dispatchEvent(new CustomEvent('gamead:cta_dispatch', { detail: payload }));
-  }
-
-  window.__adNetworkCta = function (href) {
-    var network = detect();
-    switch (network) {
-      case 'meta':
-        window.FbPlayableAd.onCTAClick();
-        break;
-      case 'tiktok':
-        window.openAppStore();
-        break;
-      case 'mraid':
-        window.mraid.open(href);
-        break;
-      default:
-        // ここで location を書き換えたくなるが、やってはいけない。
-        // TikTok は JS リダイレクトを明示的に禁止しており、審査で弾かれる。
-        // 遷移させるかどうかは、埋め込んでいる側の責任にする。
-        break;
-    }
-    notify(network, href, network !== 'none');
+    return opened;
   };
-
-  window.__adNetwork = detect;
 })();
 </script>
 <script>
@@ -453,9 +392,10 @@ body {
 <script>
 /* ---- ./game.js ---- */
 /*
- * とびこえランナー — タップでジャンプして障害物をよける
+ * すきまくぐり — タップで飛んで柱のすきまを抜ける
  *
  * 配信まわり（postMessage / CTA / 埋め込みコード）は ../shared/ad-sdk.js が持つ。
+ * このファイルはゲームの中身だけ。
  */
 (() => {
   'use strict';
@@ -465,144 +405,161 @@ body {
   const ctx = canvas.getContext('2d', { alpha: false });
 
   // ---- パラメータ ---------------------------------------------------------
-  const GROUND_Y = 548;
-  const PX       = 168;      // プレイヤーの x
-  const PW = 40, PH = 56;
-  const GRAVITY  = 2900;
-  const JUMP_V   = -940;
-  const SPEED0   = 350;
-  const SPEED_UP = 11;       // 1秒あたりの加速
-  const SPEED_MAX = 700;
+  const GROUND_Y = 636;
+  const BIRD_X   = 224;
+  const BIRD_R   = 22;
+  const GRAVITY  = 1560;
+  const FLAP_V   = -470;
+  const PIPE_W   = 98;
+  const GAP      = 214;
+  const SPEED    = 236;
+  const SPAWN_S  = 1.42;
+  const MARGIN   = 96;   // 柱のすきまが画面端に寄りすぎないように
 
-  const SKY_TOP = '#141b2b', SKY_BOT = '#2b3a55';
-  const HILL_A = '#1b2740', HILL_B = '#22314f';
-  const GROUND_C = '#38455f', LINE_C = '#5b6d8f';
-  const BODY_C = '#7ee0c0', OBST_C = '#e06a5a';
+  const SKY_TOP = '#1d3f68', SKY_BOT = '#3d7fae';
+  const PIPE_A  = '#5aa64f', PIPE_B  = '#3f7d38';
+  const GROUND  = '#c8a86a', GROUND_D = '#a5854c';
 
   // ---- 状態 ---------------------------------------------------------------
   let mode = 'idle';        // idle | play | over
   let raf = 0, lastT = 0;
-  let py, pv, onGround, runT;
-  let obstacles, spawnT, dist, speed, score, best = 0;
-  let stars = [], hills = [];
+  let birdY, birdV, wing, dead;
+  let pipes, spawnT, scroll, score, best = 0;
+  let clouds = [];
 
   function reset() {
-    py = GROUND_Y - PH; pv = 0; onGround = true; runT = 0;
-    obstacles = []; spawnT = 1.1; dist = 0; speed = SPEED0; score = 0;
-    stars = [];
-    for (let i = 0; i < 46; i++) {
-      stars.push({ x: Math.random() * W, y: Math.random() * 380,
-                   r: Math.random() < 0.2 ? 2 : 1.3 });
-    }
-    hills = [];
-    for (let i = 0; i < 9; i++) {
-      hills.push({ x: i * 130 + Math.random() * 60, w: 150 + Math.random() * 130,
-                   h: 60 + Math.random() * 90 });
+    birdY = 300; birdV = 0; wing = 0; dead = 0;
+    pipes = []; spawnT = 0.45; scroll = 0; score = 0;
+    clouds = [];
+    for (let i = 0; i < 5; i++) {
+      clouds.push({ x: Math.random() * W, y: 70 + Math.random() * 220,
+                    s: 26 + Math.random() * 30, v: 8 + Math.random() * 14 });
     }
   }
 
   // ---- 入力 ---------------------------------------------------------------
-  function jump() {
-    if (mode !== 'play' || !onGround) return;
-    pv = JUMP_V;
-    onGround = false;
-    SFX.tone(480, 0.10, 'square', 0.09, 700);
+  function flap() {
+    if (mode !== 'play') return;
+    birdV = FLAP_V;
+    wing = 1;
+    SFX.tone(560, 0.09, 'square', 0.10, 760);
   }
 
   canvas.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     AdSDK.interaction(e.pointerType === 'touch' ? 'touch' : 'pointer');
-    jump();
+    flap();
   });
   window.addEventListener('keydown', (e) => {
     const tag = e.target && e.target.tagName;
     if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'TEXTAREA') return;
-    if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter' || e.key === 'ArrowUp') {
+    if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter') {
       e.preventDefault();
       AdSDK.interaction('keyboard');
-      jump();
+      flap();
     }
   });
 
   // ---- 更新 ---------------------------------------------------------------
-  function spawnObstacle() {
-    // 高さは2種類。低いものは連続で置くことがある。
-    const tall = Math.random() < 0.42;
-    const h = tall ? 68 + Math.random() * 26 : 38 + Math.random() * 16;
-    const w = tall ? 30 + Math.random() * 12 : 34 + Math.random() * 26;
-    obstacles.push({ x: W + 40, w: w, h: h, passed: false });
-    // 次の間隔は速度に合わせて決める。速いほど広く取らないと避けられない。
-    const minGap = (PW + 210) / speed;
-    spawnT = minGap + Math.random() * 0.85;
+  function spawnPipe() {
+    const gapY = MARGIN + GAP / 2 + Math.random() * (GROUND_Y - GAP - MARGIN * 2);
+    pipes.push({ x: W + PIPE_W, gapY: gapY, passed: false });
+  }
+
+  function hitPipe(p) {
+    // 円と矩形のあたり判定。上下2本ぶん見る。
+    const nx = Math.max(p.x, Math.min(BIRD_X, p.x + PIPE_W));
+    if (Math.abs(nx - BIRD_X) > BIRD_R) return false;
+    const top = p.gapY - GAP / 2, bot = p.gapY + GAP / 2;
+    const nyTop = Math.min(top, Math.max(0, birdY));
+    const nyBot = Math.max(bot, Math.min(GROUND_Y, birdY));
+    const dTop = Math.hypot(nx - BIRD_X, nyTop - birdY);
+    const dBot = Math.hypot(nx - BIRD_X, nyBot - birdY);
+    return dTop < BIRD_R || dBot < BIRD_R;
   }
 
   function gameOver() {
     if (mode !== 'play') return;
     mode = 'over';
     if (score > best) best = score;
-    SFX.tone(280, 0.18, 'square', 0.13, 90);
-    SFX.noise(0.36, 800, 140, 0.13, 0.04);
+    SFX.tone(300, 0.16, 'square', 0.14, 120);
+    SFX.noise(0.34, 900, 160, 0.14, 0.05);
     document.body.dataset.state = 'done';
     document.getElementById('after').hidden = false;
-    AdSDK.complete({ score: score, best: best, distanceM: score });
+    AdSDK.complete({ score: score, best: best, pipes: score });
   }
 
   function update(dt) {
-    if (mode === 'play') {
-      speed = Math.min(SPEED_MAX, speed + SPEED_UP * dt);
-      dist += speed * dt;
-      score = Math.floor(dist / 24);
+    scroll += SPEED * dt;
+    for (const c of clouds) {
+      c.x -= c.v * dt;
+      if (c.x < -c.s * 2) { c.x = W + c.s * 2; c.y = 70 + Math.random() * 220; }
+    }
+    if (mode !== 'play') return;
 
-      pv += GRAVITY * dt;
-      py += pv * dt;
-      if (py >= GROUND_Y - PH) { py = GROUND_Y - PH; pv = 0; onGround = true; }
-      if (onGround) runT += dt * speed / 90;
+    birdV += GRAVITY * dt;
+    birdY += birdV * dt;
+    if (wing > 0) wing = Math.max(0, wing - dt * 5);
 
-      spawnT -= dt;
-      if (spawnT <= 0) spawnObstacle();
+    spawnT -= dt;
+    if (spawnT <= 0) { spawnPipe(); spawnT = SPAWN_S; }
 
-      for (const o of obstacles) {
-        o.x -= speed * dt;
-        if (!o.passed && o.x + o.w < PX) {
-          o.passed = true;
-          SFX.tone(920, 0.06, 'sine', 0.06);
-        }
-      }
-      obstacles = obstacles.filter((o) => o.x > -80);
-
-      // 矩形どうしのあたり判定。見た目より少し小さめにして理不尽さを減らす。
-      const bx = PX + 6, bw = PW - 12, by = py + 4, bh = PH - 6;
-      for (const o of obstacles) {
-        const oy = GROUND_Y - o.h;
-        if (bx < o.x + o.w && bx + bw > o.x && by < GROUND_Y && by + bh > oy) {
-          gameOver(); return;
-        }
+    for (const p of pipes) {
+      p.x -= SPEED * dt;
+      if (!p.passed && p.x + PIPE_W < BIRD_X) {
+        p.passed = true;
+        score++;
+        SFX.tone(880, 0.09, 'sine', 0.11);
+        SFX.tone(1180, 0.10, 'sine', 0.09, null, 0.07);
       }
     }
-    // 背景は終了後も少しだけ動かさない（止めて余韻を出す）
+    pipes = pipes.filter((p) => p.x > -PIPE_W - 10);
+
+    if (birdY + BIRD_R >= GROUND_Y) { birdY = GROUND_Y - BIRD_R; gameOver(); return; }
+    if (birdY - BIRD_R < 0) { birdY = BIRD_R; birdV = 0; }
+    for (const p of pipes) if (hitPipe(p)) { gameOver(); return; }
   }
 
   // ---- 描画 ---------------------------------------------------------------
-  function drawRunner() {
-    const x = PX, y = py;
-    ctx.fillStyle = BODY_C;
-    ctx.fillRect(x + 6, y + 12, PW - 12, PH - 24);          // 胴
-    ctx.beginPath();                                         // 頭
-    ctx.arc(x + PW / 2, y + 10, 11, 0, Math.PI * 2);
+  function drawBird() {
+    const rot = Math.max(-0.5, Math.min(1.1, birdV / 620));
+    ctx.save();
+    ctx.translate(BIRD_X, birdY);
+    ctx.rotate(rot);
+    ctx.fillStyle = '#f6d743';
+    ctx.beginPath(); ctx.arc(0, 0, BIRD_R, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#e8b62c';                       // 翼
+    ctx.beginPath();
+    ctx.ellipse(-4, 2 + wing * 7, 12, 7 - wing * 3, -0.3, 0, Math.PI * 2);
     ctx.fill();
+    ctx.fillStyle = '#fff';                          // 目
+    ctx.beginPath(); ctx.arc(9, -7, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#243049';
+    ctx.beginPath(); ctx.arc(11, -7, 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#f08a3c';                       // くちばし
+    ctx.beginPath();
+    ctx.moveTo(18, -1); ctx.lineTo(31, 3); ctx.lineTo(18, 8);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
 
-    ctx.strokeStyle = BODY_C;
-    ctx.lineWidth = 6; ctx.lineCap = 'round';
-    const swing = onGround ? Math.sin(runT) : 0.7;
-    const swing2 = onGround ? Math.sin(runT + Math.PI) : -0.4;
-    ctx.beginPath();                                         // 脚
-    ctx.moveTo(x + PW / 2 - 3, y + PH - 14);
-    ctx.lineTo(x + PW / 2 - 3 + swing * 15, y + PH);
-    ctx.moveTo(x + PW / 2 + 3, y + PH - 14);
-    ctx.lineTo(x + PW / 2 + 3 + swing2 * 15, y + PH);
-    ctx.moveTo(x + PW / 2, y + 22);                          // 腕
-    ctx.lineTo(x + PW / 2 + swing2 * 14, y + 34);
-    ctx.stroke();
+  function drawPipe(p) {
+    const top = p.gapY - GAP / 2, bot = p.gapY + GAP / 2;
+    const lip = 26;
+    for (const seg of [[0, top], [bot, GROUND_Y - bot]]) {
+      const y = seg[0], h = seg[1];
+      if (h <= 0) continue;
+      ctx.fillStyle = PIPE_A;
+      ctx.fillRect(p.x, y, PIPE_W, h);
+      ctx.fillStyle = PIPE_B;
+      ctx.fillRect(p.x + PIPE_W - 16, y, 16, h);
+    }
+    ctx.fillStyle = PIPE_A;
+    ctx.fillRect(p.x - 7, top - lip, PIPE_W + 14, lip);
+    ctx.fillRect(p.x - 7, bot, PIPE_W + 14, lip);
+    ctx.fillStyle = PIPE_B;
+    ctx.fillRect(p.x + PIPE_W - 9, top - lip, 16, lip);
+    ctx.fillRect(p.x + PIPE_W - 9, bot, 16, lip);
   }
 
   function draw() {
@@ -610,62 +567,44 @@ body {
     g.addColorStop(0, SKY_TOP); g.addColorStop(1, SKY_BOT);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, GROUND_Y);
 
-    ctx.fillStyle = 'rgba(226,236,250,0.75)';
-    for (const s of stars) ctx.fillRect(s.x, s.y, s.r, s.r);
-
-    ctx.fillStyle = '#e9edd6';                               // 月
-    ctx.beginPath(); ctx.arc(132, 106, 34, 0, Math.PI * 2); ctx.fill();
-
-    // 丘。手前と奥で速度を変えて奥行きを出す。
-    for (let layer = 0; layer < 2; layer++) {
-      const par = layer === 0 ? 0.14 : 0.34;
-      const base = GROUND_Y - (layer === 0 ? 10 : 0);
-      ctx.fillStyle = layer === 0 ? HILL_A : HILL_B;
-      for (const hl of hills) {
-        const x = ((hl.x - dist * par) % (W + 320) + W + 320) % (W + 320) - 160;
-        const h = hl.h * (layer === 0 ? 1.25 : 0.85);
-        ctx.beginPath();
-        ctx.moveTo(x, base);
-        ctx.quadraticCurveTo(x + hl.w / 2, base - h, x + hl.w, base);
-        ctx.closePath(); ctx.fill();
-      }
+    ctx.fillStyle = 'rgba(255,255,255,0.16)';
+    for (const c of clouds) {
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.s, 0, Math.PI * 2);
+      ctx.arc(c.x + c.s * 0.8, c.y + 6, c.s * 0.72, 0, Math.PI * 2);
+      ctx.arc(c.x - c.s * 0.8, c.y + 8, c.s * 0.6, 0, Math.PI * 2);
+      ctx.fill();
     }
 
-    ctx.fillStyle = GROUND_C;
+    for (const p of pipes) drawPipe(p);
+
+    ctx.fillStyle = GROUND;
     ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
-    ctx.fillStyle = LINE_C;
-    ctx.fillRect(0, GROUND_Y, W, 4);
-    for (let x = -((dist * 1.0) % 90); x < W; x += 90) {
-      ctx.fillRect(x, GROUND_Y + 34, 46, 4);
+    ctx.fillStyle = GROUND_D;
+    ctx.fillRect(0, GROUND_Y, W, 9);
+    for (let x = -((scroll * 0.6) % 56); x < W; x += 56) {
+      ctx.fillRect(x, GROUND_Y + 22, 30, 6);
     }
 
-    for (const o of obstacles) {
-      const oy = GROUND_Y - o.h;
-      ctx.fillStyle = OBST_C;
-      ctx.fillRect(o.x, oy, o.w, o.h);
-      ctx.fillStyle = 'rgba(0,0,0,0.22)';
-      ctx.fillRect(o.x + o.w - 7, oy, 7, o.h);
-    }
+    drawBird();
 
-    drawRunner();
-
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.font = '800 46px system-ui, sans-serif';
-    ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
-    ctx.fillText(score + ' m', W - 34 + 2, 80 + 2);
+    // スコア
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.font = '800 68px system-ui, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(String(score), W / 2 + 3, 111);
     ctx.fillStyle = '#fff';
-    ctx.fillText(score + ' m', W - 34, 80);
+    ctx.fillText(String(score), W / 2, 108);
 
     if (mode === 'over') {
       ctx.fillStyle = 'rgba(13,16,23,0.55)';
       ctx.fillRect(0, 0, W, H);
-      ctx.textAlign = 'center';
       ctx.fillStyle = '#fff';
       ctx.font = '800 46px system-ui, sans-serif';
-      ctx.fillText(score + ' m 走った', W / 2, H / 2 - 16);
+      ctx.fillText('くぐった数 ' + score, W / 2, H / 2 - 16);
       ctx.font = '600 22px system-ui, sans-serif';
       ctx.fillStyle = '#b9c6d6';
-      ctx.fillText('最高 ' + best + ' m', W / 2, H / 2 + 22);
+      ctx.fillText('最高 ' + best, W / 2, H / 2 + 22);
     }
   }
 
@@ -685,6 +624,7 @@ body {
     lastT = performance.now();
     if (raf) cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
+    flap();
     AdSDK.start({});
   }
 
@@ -705,10 +645,11 @@ body {
     startGame();
   });
 
+  // 開始前も静止画を出しておく（枠が真っ黒にならないように）
   reset();
   draw();
 
-  AdSDK.init({ campaign: 'runner', title: 'ゲーム広告：とびこえランナー' });
+  AdSDK.init({ campaign: 'flappy', title: 'ゲーム広告：すきまくぐり' });
 })();
 </script>
 

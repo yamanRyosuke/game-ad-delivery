@@ -1,57 +1,61 @@
 {
-  "builtAt": "2026-09-07 19:55",
+  "builtAt": "2026-09-07 20:35",
   "games": [
     {
       "id": "suika",
       "name": "くだものおとし",
-      "htmlBytes": 29168,
-      "zipBytes": 11158,
+      "htmlBytes": 29167,
+      "zipBytes": 11157,
       "metaLimitBytes": 2097152,
       "tiktokLimitBytes": 5242880,
+      "problems": [],
+      "href": "https://example.com/lp/suika",
       "inlinedCss": 1,
       "inlinedJs": 3,
       "inlinedAssets": 0,
-      "assetBytes": 0,
-      "problems": []
+      "assetBytes": 0
     },
     {
       "id": "flappy",
       "name": "すきまくぐり",
-      "htmlBytes": 26387,
-      "zipBytes": 10027,
+      "htmlBytes": 26386,
+      "zipBytes": 10025,
       "metaLimitBytes": 2097152,
       "tiktokLimitBytes": 5242880,
+      "problems": [],
+      "href": "https://example.com/lp/flappy",
       "inlinedCss": 1,
       "inlinedJs": 3,
       "inlinedAssets": 0,
-      "assetBytes": 0,
-      "problems": []
+      "assetBytes": 0
     },
     {
       "id": "runner",
       "name": "とびこえランナー",
-      "htmlBytes": 26664,
-      "zipBytes": 10246,
+      "htmlBytes": 26663,
+      "zipBytes": 10244,
       "metaLimitBytes": 2097152,
       "tiktokLimitBytes": 5242880,
+      "problems": [],
+      "href": "https://example.com/lp/runner",
       "inlinedCss": 1,
       "inlinedJs": 3,
       "inlinedAssets": 0,
-      "assetBytes": 0,
-      "problems": []
+      "assetBytes": 0
     },
     {
       "id": "campaign001",
       "name": "あの板、2人乗れた説",
-      "htmlBytes": 36943,
-      "zipBytes": 14343,
+      "htmlBytes": 36900,
+      "zipBytes": 14324,
       "metaLimitBytes": 2097152,
       "tiktokLimitBytes": 5242880,
+      "problems": [],
+      "href": "https://example.com/lp/campaign001",
       "inlinedCss": 0,
       "inlinedJs": 1,
       "inlinedAssets": 1,
-      "assetBytes": 831,
-      "problems": []
+      "assetBytes": 831
     }
   ]
 }

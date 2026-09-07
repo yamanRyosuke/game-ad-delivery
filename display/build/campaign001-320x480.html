@@ -2,11 +2,18 @@
 <html lang="ja">
 <head>
 <!--
-  プレイアブル広告版（単体 HTML）: あの板、2人乗れた説
-  tools/build-playable.py が生成したもの。直接編集しないこと。
-  直すのは campaign001/ と shared/ と playable/ の側。
+  HTML5 ディスプレイ広告版: あの板、2人乗れた説（320x480）
+  tools/build-display.py が生成したもの。直接編集しないこと。
+  直すのは campaign001/ と shared/ と display/ の側。
   ビルド日時: 2026-09-07 20:35:07
 -->
+<meta name="ad.size" content="width=320,height=480">
+<script>
+/* clickTag: アドサーバーが遷移先と計測用 URL を差し替えるための変数。
+   難読化・圧縮してはいけない（アドサーバーが読めなくなる）。
+   ここに書いてある URL は、差し替えられなかったときの保険。 */
+var clickTag = "https://example.com/lp/campaign001";
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>あの板、2人乗れた説</title>
@@ -58,80 +65,32 @@
   #btnCta { background: #f2b45c; color: #16283f; border-color: #f2b45c; }
 </style>
 <style>
-/* ---- playable/shell.css ---- */
-/*
- * shell.css — プレイアブル広告版だけに足す外枠
- *
- * 記事に貼る iframe 配信版は正方形（1:1）で統一しているが、
- * プレイアブル広告は Meta が「縦向き（portrait）かつレスポンシブ」を必須にしている。
- * canvas は 720x720 のままなので、縦長の画面では上下に余白が出る。
- * その余白を使って CTA を大きく置くのが以下の指定。
- *
- * 注意: #start と #after は #stage の中に絶対配置されている（shared/game.css）。
- * ここで position を通常フローに戻すと、#stage を flex にした瞬間に
- * canvas の「横」へ回り込む。絶対配置のまま扱うこと。
- */
-:root {
-  /* CTA バーの高さ。canvas の下に必ずこの分の余白を確保する。
-     終了前から場所を空けておくことで、CTA 出現時に画面が動かない。 */
-  --cta-h: 96px;
-}
+/* ---- HTML5 ディスプレイ広告 320x480 用の外枠 ---- */
+/* 広告枠は 320x480 の固定サイズ。はみ出すとスクロールバーが出て審査に落ちる。 */
+html, body { width: 320px; height: 480px; overflow: hidden; }
 
-html, body { height: 100%; }
-body {
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-}
+/* 枠が小さいぶん、開始画面の文字とボタンを詰める */
+#start .card { width: 94%; }
+#start h1 { font-size: 19px; margin: 0 0 6px; }
+#start p  { font-size: 12px; margin: 0 0 12px; line-height: 1.5; }
+#start .btns { gap: 8px; }
+button, #btnCta { font-size: 13px; padding: 8px 12px; }
 
-/* 正方形の canvas を、CTA バーの分を除いた領域の中央に置く */
+/* 縦長サイズ。canvas の下に CTA バーを置く場所がある。
+   終了前から場所を空けておくことで、CTA 出現時に画面が動かない。 */
+body { flex-direction: column; align-items: stretch; justify-content: flex-start; }
 #stage {
-  position: relative;
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 0;
-  padding-bottom: var(--cta-h);
+  position: relative; flex: 1 1 auto;
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: 0; padding-bottom: 60px;
 }
-#game {
-  width: min(100vw, calc(100vh - var(--cta-h)));
-  height: min(100vw, calc(100vh - var(--cta-h)));
-  max-width: 100%;
-}
-
-/* CTA バー。canvas の上に重ねるのではなく、下に確保した余白へ置く。
-   縦長画面では canvas の外に出した方が押しやすく、誤タップも減る。 */
+#game { width: min(100vw, calc(100vh - 60px)); height: min(100vw, calc(100vh - 60px)); }
 #after {
-  height: var(--cta-h);
-  box-sizing: border-box;
-  padding: 0 16px calc(env(safe-area-inset-bottom, 0px));
-  background: #0d1017;
-  flex-wrap: nowrap;
+  height: 60px; box-sizing: border-box;
+  padding: 0 10px; background: #0d1017; flex-wrap: nowrap; gap: 8px;
 }
-#btnCta {
-  flex: 1 1 auto;
-  max-width: 320px;
-  text-align: center;
-  padding: 14px 20px;
-  font-size: clamp(15px, 4.2vw, 18px);
-}
+#btnCta { flex: 1 1 auto; max-width: 190px; text-align: center; }
 #btnReplay { flex: 0 0 auto; }
-
-/* 横向きで開かれたときも破綻させない。
-   TikTok は config.json で縦固定にするが、Meta のプレビューや
-   実機の回転までは保証されないため、横でも成立させておく。 */
-@media (orientation: landscape) {
-  #stage { padding-bottom: 0; }
-  #game { width: min(720px, 100vw, 100vh); height: min(720px, 100vw, 100vh); }
-  #after {
-    height: auto;
-    padding: 16px 12px calc(16px + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(to top, rgba(13, 16, 23, .96), rgba(13, 16, 23, 0));
-    flex-wrap: wrap;
-  }
-}
 </style>
 </head>
 <body data-state="ready">
@@ -154,71 +113,51 @@ body {
   </div>
 </div>
 <script>
-/* ---- playable/adapter.js ---- */
+/* ---- display/adapter.js ---- */
 /*
- * adapter.js — プレイアブル広告版だけに入る、CTA の委譲先アダプタ
+ * adapter.js — HTML5 ディスプレイ広告版だけに入る、CTA の委譲先アダプタ
  *
- * プレイアブル広告は「広告ネットワークのコンテナの中で動く単体 HTML」なので、
- * ストアへ送る手段がネットワークごとに違う。ゲーム側にネットワーク判定を書くと
- * 配信先が増えるたびにゲームを触ることになるため、ここで吸収する。
+ * ディスプレイ広告のクリックは clickTag を通す決まりになっている。
+ * clickTag は「アドサーバーが遷移先と計測用 URL を差し替えるための変数」で、
+ * 素材の中に遷移先をハードコードしてしまうと、
  *
- *   Meta     window.FbPlayableAd.onCTAClick()
- *   TikTok   window.openAppStore()
- *   MRAID系  window.mraid.open(url)      … Unity / AppLovin / ironSource など
- *   なし     親へ postMessage するだけ    … 掲載イメージのページ / 単体で開いたとき
+ *   ・クリック計測が通らない（何回押されたか分からない）
+ *   ・入稿後に遷移先を差し替えられない（素材を作り直すことになる）
  *
- * 判定は「読み込み時」ではなく「クリック時」に行う。ネットワークの SDK は
- * コンテナ側があとから注入することがあり、起動時点ではまだ存在しないため。
+ * という2つが同時に起きる。だから window.open(clickTag) の形にする。
  *
- * このファイルは iframe 配信版（各ゲームの index.html）には入らない。
- * 入るのは tools/build-playable.py が生成した単体 HTML だけ。
+ * プレイアブル広告版（playable/adapter.js）とは事情が違う点に注意。
+ * あちらは遷移そのものが禁止でネットワークの API を呼ぶ。こちらは普通に開く。
+ *
+ * なお、素材の全面を <a> で包む書き方もよく使われるが、ここでは使っていない。
+ * 全面がクリック領域になると、ゲームを操作するタップまで遷移になってしまう。
+ * 遊べる素材では CTA ボタンを出口にするのが正しい。
+ * （アドサーバーによっては全面クリックを要求されることがあるため、入稿時に要確認）
  */
 (function () {
   'use strict';
 
-  function detect() {
-    if (window.FbPlayableAd && typeof window.FbPlayableAd.onCTAClick === 'function') return 'meta';
-    if (typeof window.openAppStore === 'function') return 'tiktok';
-    if (window.mraid && typeof window.mraid.open === 'function') return 'mraid';
-    return 'none';
-  }
-
-  function notify(network, href, handled) {
+  window.__adNetworkCta = function (href) {
+    var url = (typeof window.clickTag === 'string' && window.clickTag) || href;
+    var opened = null;
+    try {
+      opened = window.open(url, '_blank');
+    } catch (e) {
+      console.warn('[display] window.open に失敗:', e);
+    }
     var payload = {
       source: 'game-ad',
       event: 'cta_dispatch',
-      data: { network: network, href: href, handled: handled },
+      data: { network: 'clickTag', href: url, handled: true },
       ts: Date.now()
     };
-    console.log('[playable] CTA →', network, handled ? '(ネットワークAPIへ委譲)' : '(委譲先なし)');
+    console.log('[display] CTA → clickTag:', url);
     try {
       if (window.parent && window.parent !== window) window.parent.postMessage(payload, '*');
-    } catch (e) { /* コンテナがクロスオリジンでも落とさない */ }
+    } catch (e) { /* 掲載先がクロスオリジンでも落とさない */ }
     document.dispatchEvent(new CustomEvent('gamead:cta_dispatch', { detail: payload }));
-  }
-
-  window.__adNetworkCta = function (href) {
-    var network = detect();
-    switch (network) {
-      case 'meta':
-        window.FbPlayableAd.onCTAClick();
-        break;
-      case 'tiktok':
-        window.openAppStore();
-        break;
-      case 'mraid':
-        window.mraid.open(href);
-        break;
-      default:
-        // ここで location を書き換えたくなるが、やってはいけない。
-        // TikTok は JS リダイレクトを明示的に禁止しており、審査で弾かれる。
-        // 遷移させるかどうかは、埋め込んでいる側の責任にする。
-        break;
-    }
-    notify(network, href, network !== 'none');
+    return opened;
   };
-
-  window.__adNetwork = detect;
 })();
 </script>
 <script>
