@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>あの板、2人乗れた説</title>
+<!--
+  ゲーム広告 配信ファイル（campaign001）
+
+  このディレクトリが iframe の src になる。メディア側にはこのタグ1個を渡す。
+
+    <iframe
+      src="https://yamanryosuke.github.io/game-ad-delivery/campaign001/"
+      width="100%" height="600" frameborder="0"
+      allow="autoplay; fullscreen"
+      title="ゲーム広告：あの板、2人乗れた説"></iframe>
+
+  貼り方と動作確認の手順は、1つ上の階層（../）の案内ページにまとめてある。
+-->
+<style>
+  html, body { margin: 0; padding: 0; background: #0a1224; overflow: hidden; }
+  body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh;
+    font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  #stage { position: relative; line-height: 0; }
+  #game {
+    display: block;
+    width: min(720px, 100vw, 100vh);
+    height: min(720px, 100vw, 100vh);
+    /* pan-y = 縦方向のスクロールはブラウザに任せ、タップはゲームが受け取る。
+       none にすると canvas の上で親ページを縦スクロールできなくなり、
+       スマホで「広告に指が吸い付いて記事が読めない」状態になる。 */
+    touch-action: pan-y;
+    background: #0a1224;
+  }
+  #start {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(10, 18, 36, 0.92);
+    line-height: 1.6;
+  }
+  #start[hidden], #after[hidden] { display: none; }
+  #btnCta { display: inline-block; text-decoration: none; box-sizing: border-box; }
+  #start .card { width: min(88%, 520px); text-align: center; color: #f2ecdd; }
+  #start h1 { margin: 0 0 12px; font-size: clamp(20px, 5.2vw, 30px); font-weight: 700; }
+  #start p { margin: 0 0 20px; font-size: clamp(12px, 3.1vw, 15px); color: #a8bacd; }
+  #start .btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  button, #btnCta {
+    font: inherit; font-size: clamp(13px, 3.4vw, 16px); font-weight: 700;
+    padding: 12px 20px; border: 1px solid #4d7dae; border-radius: 0;
+    background: #16283f; color: #f2ecdd; cursor: pointer;
+  }
+  /* 終了後のバー。canvas の下ではなく上に重ねる（iframe で切れないように） */
+  #after {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;
+    padding: 16px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+    line-height: 1.6;
+    background: linear-gradient(to top, rgba(10, 18, 36, 0.96), rgba(10, 18, 36, 0));
+  }
+  #btnCta { background: #f2b45c; color: #16283f; border-color: #f2b45c; }
+</style>
+</head>
+<body data-state="ready">
+<div id="stage">
+  <canvas id="game" width="720" height="720"></canvas>
+  <div id="start" hidden>
+    <div class="card">
+      <h1>あの板、2人乗れた説</h1>
+      <p>板の上をタップすると、その場所に人が乗る。2人で5秒。<br>（キーボードは Space / Enter）</p>
+      <div class="btns">
+        <button id="btnPlay">自分で遊ぶ</button>
+        <button id="btnAuto">自動プレイを見る</button>
+      </div>
+    </div>
+  </div>
+  <div id="after" hidden>
+    <button id="btnReplay">もう一回</button>
+    <!-- CTA。iframe の中から押しても親ページを遷移させないため、
+         target="_blank" と rel="noopener noreferrer" は必須。
+         href は案件ごとに広告主の LP へ差し替える。 -->
+    <a id="btnCta"
+       href="https://example.com/lp/campaign001"
+       target="_blank"
+       rel="noopener noreferrer">詳しくはこちら</a>
+  </div>
+</div>
+<script src="./js/game.js"></script>
+</body>
+</html>

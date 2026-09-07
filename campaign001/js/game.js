@@ -1,0 +1,673 @@
+/*
+ * あの板、2人乗れた説 — ゲーム本体
+ *
+ * このファイルは元の単体 index.html から <script> を切り出したもの。
+ * ゲームのルール・見た目・物理・演出は変更していない。
+ * iframe 広告配信 PoC のために足した箇所には [PoC] と印を付けてある。
+ *
+ *   [PoC] 1. 外部画像（./assets/test-image.png）の読み込みと描画
+ *   [PoC] 2. 親ページへの postMessage 送信
+ *   [PoC] 3. CTA ボタンのクリック計測
+ */
+(() => {
+  'use strict';
+
+  const W = 720, H = 720;
+  const FONT = 'sans-serif';
+  const DAY_SEED = 20260906;
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d', { alpha: false });
+
+  // =========================================================================
+  // [PoC] 親ページ（Web メディア）へのイベント送信
+  // =========================================================================
+  //
+  // ★★★ 本番では targetOrigin を必ず配信先ドメインに限定すること ★★★
+  //
+  // ここが '*' のままだと、このゲームを iframe で埋め込んだ「任意の」ページが
+  // スコア・プレイ時間・行動ログを受け取れてしまう。
+  // 本番では埋め込みを許可したメディアのオリジンだけを指定する。
+  //
+  //   const PARENT_ORIGIN = 'https://media-example.jp';
+  //
+  // 複数メディアへ配信する場合は、配信時に生成する設定ファイル、または
+  // iframe の URL パラメータ（?parent=https%3A%2F%2Fmedia-example.jp）で
+  // オリジンを受け取り、許可リストと突き合わせてから使う。
+  // URL パラメータをそのまま targetOrigin に渡してはいけない。
+  // 掲載テスト中は、どのメディアに貼られるか未確定のため '*'。
+  // 掲載先のドメインが確定した時点で、必ずそのオリジンに固定すること。
+  const PARENT_ORIGIN = '*';
+  const AD_SOURCE   = 'game-ad';    // 親側でメッセージを判別するための印
+  const CAMPAIGN_ID = 'campaign001';
+
+  let sentFirstInteraction = false;
+
+  function emit(event, data) {
+    const payload = {
+      source: AD_SOURCE,
+      campaign: CAMPAIGN_ID,
+      event: event,
+      data: data || {},
+      ts: Date.now(),
+    };
+    console.log('[game-ad] emit:', event, payload.data);
+    try {
+      // iframe で埋め込まれていない（直接開いた）ときは window.parent === window
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(payload, PARENT_ORIGIN);
+      }
+    } catch (e) {
+      console.warn('[game-ad] postMessage に失敗:', e);
+    }
+    // 直接開いたときにも確認できるよう、同一ドキュメント内にも流す
+    document.dispatchEvent(new CustomEvent('gamead:' + event, { detail: payload }));
+  }
+
+  // first_interaction は「人間が最初にこのゲームに触った瞬間」。1回だけ送る。
+  // kind でどの操作だったか（開始ボタン / タップ / キー）が分かるようにしている。
+  function markFirstInteraction(kind) {
+    if (sentFirstInteraction) return;
+    sentFirstInteraction = true;
+    emit('first_interaction', { kind: kind });
+  }
+
+  // =========================================================================
+  // [PoC] 外部画像の読み込み
+  // =========================================================================
+  // 元のゲームは背景もキャラクターも全部 Canvas に手描きしていて、外部ファイルを
+  // 1枚も読んでいなかった。実際の広告ゲームは assets/ 配下の画像を読むので、
+  // その経路が iframe 内でも通るかをここで確認する。
+  const IMAGE_SRC = './assets/test-image.png';
+  const LOGO_X = 24, LOGO_Y = 24, LOGO_SIZE = 88;
+
+  let logoImg = null;
+  let logoState = 'loading';   // loading | loaded | error
+
+  function loadTestImage() {
+    const img = new Image();
+    // 同一ディレクトリ（同一オリジン）の画像なので crossOrigin は不要。
+    // 別ドメインの CDN から読み、かつ getImageData 等でピクセルを読むなら
+    // img.crossOrigin = 'anonymous' と、配信側の CORS ヘッダが要る。
+    img.addEventListener('load', () => {
+      logoImg = img;
+      logoState = 'loaded';
+      console.log('[game-ad] 画像の読み込みに成功:', IMAGE_SRC,
+        img.naturalWidth + 'x' + img.naturalHeight);
+      emit('asset_loaded', { src: IMAGE_SRC, w: img.naturalWidth, h: img.naturalHeight });
+      // 開始前の待機画面にもすぐ反映させる
+      if (mode === 'idle' && bg) { ctx.drawImage(bg, 0, 0); drawWater(0); drawTestImage(); }
+    });
+    img.addEventListener('error', () => {
+      logoState = 'error';
+      console.error('[game-ad] 画像の読み込みに失敗:', IMAGE_SRC,
+        '→ パス・配信サーバーの MIME タイプ・404 を確認すること');
+      emit('asset_error', { src: IMAGE_SRC });
+    });
+    img.src = IMAGE_SRC;
+  }
+
+  function drawTestImage() {
+    if (logoState !== 'loaded' || !logoImg) return;
+    ctx.drawImage(logoImg, LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE);
+  }
+
+  // ---- timing (ms) --------------------------------------------------------
+  const T_TITLE = 1700;   // title line only; still and complete from frame 1
+  const T_STILL = 2000;   // frozen final picture
+  const T_HOLD  = 1200;   // keep drawing after game:done
+
+  // ---- layout -------------------------------------------------------------
+  const SEA_Y = 470;
+  const CX    = 360;
+  const PL    = 150;      // plank half length
+  const PTH   = 18;       // plank thickness
+  const MOON_X = 566, MOON_Y = 116, MOON_R = 30;
+
+  // ---- physics ------------------------------------------------------------
+  const K_TORQUE  = 3.6;
+  const K_SPRING  = 23.0;
+  const K_DAMP    = 4.0;
+  const SIN_SLIP  = Math.sin(0.17);
+  const K_SLIDE   = 4.0;
+  const K_IMPULSE = 0.55;
+  const FALL_U    = 1.06;
+  const DROP_MS   = 320;
+  const KEEP_GOAL = 5.0;
+  const SINK_MS   = 4200;
+  const SINK_PX   = 56;   // just enough to leave two heads above the surface
+
+  // ---- seeded PRNG (mulberry32) ------------------------------------------
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  let rnd = mulberry32(DAY_SEED);
+
+  // ---- audio --------------------------------------------------------------
+  // AudioContext を作るのは Game.start() の中だけ。つまり必ず「開始ボタンを
+  // 押した後」になる。ページ読み込み直後に音は鳴らない（Autoplay Policy 対策）。
+  let ac = null, master = null;
+  function initAudio() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    try {
+      ac = new AC();
+      master = ac.createGain();
+      master.gain.value = 0.3;
+      master.connect(ac.destination);
+      if (window.__shoumonaAudio && typeof window.__shoumonaAudio.register === 'function') {
+        window.__shoumonaAudio.register(ac, master);
+      }
+      if (ac.state === 'suspended' && ac.resume) ac.resume();
+    } catch (e) { ac = null; master = null; }
+  }
+  function tone(freq, dur, type, gain, toFreq, delay) {
+    if (!ac) return;
+    const t = ac.currentTime + (delay || 0);
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, t);
+    if (toFreq) o.frequency.exponentialRampToValueAtTime(Math.max(20, toFreq), t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + Math.min(0.03, dur * 0.3));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(master);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+  let noiseBuf = null;
+  function noise(dur, f0, f1, gain, delay) {
+    if (!ac) return;
+    const t = ac.currentTime + (delay || 0);
+    if (!noiseBuf) {
+      noiseBuf = ac.createBuffer(1, ac.sampleRate * 1.2, ac.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      const r = mulberry32(7);
+      for (let i = 0; i < d.length; i++) d[i] = r() * 2 - 1;
+    }
+    const s = ac.createBufferSource(); s.buffer = noiseBuf;
+    const bp = ac.createBiquadFilter(); bp.type = 'lowpass';
+    bp.frequency.setValueAtTime(f0, t);
+    bp.frequency.exponentialRampToValueAtTime(Math.max(60, f1), t + dur);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(bp); bp.connect(g); g.connect(master);
+    s.start(t); s.stop(t + dur + 0.05);
+  }
+  const sfx = {
+    title()  { tone(392, 0.5, 'sine', 0.14); },
+    board()  { tone(150, 0.16, 'sine', 0.20, 78); noise(0.2, 900, 240, 0.13); },
+    creak()  { tone(210, 0.3, 'sawtooth', 0.05, 158); },
+    splash() { noise(0.55, 1600, 220, 0.28); tone(230, 0.2, 'sine', 0.07, 110); },
+    hold()   { tone(523, 0.18, 'sine', 0.10); tone(659, 0.22, 'sine', 0.09, null, 0.14); },
+    sink()   { tone(170, 2.8, 'sine', 0.11, 55); noise(2.6, 500, 120, 0.08); },
+    bubble() { tone(600 + rnd() * 400, 0.09, 'sine', 0.04, 1100); },
+  };
+
+  // ---- prebaked background (flat, few colours) ---------------------------
+  let bg = null;
+  function buildBg() {
+    bg = document.createElement('canvas');
+    bg.width = W; bg.height = H;
+    const b = bg.getContext('2d');
+    b.fillStyle = '#0a1224';
+    b.fillRect(0, 0, W, SEA_Y);
+    const r = mulberry32(DAY_SEED ^ 0x51ed);
+    b.fillStyle = 'rgba(214,226,246,0.55)';
+    for (let i = 0; i < 44; i++) {
+      b.fillRect(Math.floor(r() * W), Math.floor(r() * (SEA_Y - 70)), 2, 2);
+    }
+    b.fillStyle = '#e9edd6';
+    b.beginPath(); b.arc(MOON_X, MOON_Y, MOON_R, 0, Math.PI * 2); b.fill();
+    b.fillStyle = '#0e2136';
+    b.fillRect(0, SEA_Y - 8, W, H - SEA_Y + 8);
+  }
+
+  // ---- world state --------------------------------------------------------
+  let mode = 'idle';        // idle | title | play | still
+  let autoplay = true;
+  let t0 = 0, playT0 = 0, stillAt = 0, finished = false, raf = 0;
+  let theta = 0, omega = 0;
+  let riders = [];          // { u, drop, riding, id }
+  let bodies = [];          // people in the air / at the surface
+  let bubbles = [];
+  let ripples = [];
+  let keep = 0, bestKeep = 0, dropped = 0;
+  let sinkStart = 0, sinkT = 0;
+  let outcome = 'lose';
+  let markerU = 0, riderSeq = 0;
+  let step = 0, stepAt = 0;
+  let creakAt = 0, frozenTsec = 0, frozenPlayMs = 0;
+
+  function playMs() {
+    if (mode === 'still') return frozenPlayMs;
+    return playT0 ? performance.now() - playT0 : 0;
+  }
+  function waveY(x, tsec) {
+    return SEA_Y + 4.2 * Math.sin(x * 0.017 + tsec * 1.6) + 2.6 * Math.sin(x * 0.031 - tsec * 2.2);
+  }
+
+  // ---- input --------------------------------------------------------------
+  function board(u) {
+    if (mode !== 'play' || sinkStart) return false;
+    if (riders.length >= 2) return false;
+    riders.push({ u: Math.max(-1, Math.min(1, u)), drop: 0, riding: false, id: riderSeq++ });
+    sfx.board();
+    return true;
+  }
+  function press(opts) {
+    if (mode === 'idle') return;
+    let u = markerU;
+    if (opts && typeof opts.x === 'number') u = (opts.x - CX) / PL;
+    board(u);
+  }
+
+  // ---- physics ------------------------------------------------------------
+  function plankY() {
+    const load = riders.filter((r) => r.riding).length;
+    const bob = 3 * Math.sin(playMs() / 1000 * 1.35);
+    return SEA_Y - 26 + load * 5 + bob + sinkOffset();
+  }
+  function sinkOffset() {
+    if (!sinkStart) return 0;
+    const p = Math.min(1, sinkT / (SINK_MS / 1000));
+    return SINK_PX * (p * p * (3 - 2 * p));
+  }
+  function plankPoint(u) {
+    const c = Math.cos(theta), s = Math.sin(theta);
+    return { x: CX + u * PL * c, y: plankY() + u * PL * s };
+  }
+
+  // only the person who slips goes in; the other one stays aboard
+  function slipOff(r) {
+    const dir = r.u >= 0 ? 1 : -1;
+    const p = plankPoint(r.u);
+    bodies.push({
+      x: p.x, y: p.y, vx: dir * 95, vy: -55, rot: 0, vr: dir * 2.6,
+      col: r.id % 2 ? '#a6dcea' : '#f2e9d8', floating: false, life: 0,
+    });
+    riders = riders.filter((x) => x !== r);
+    dropped++;
+    keep = 0;
+    sfx.splash();
+  }
+
+  function updatePlay(dt) {
+    const tsec = playMs() / 1000;
+
+    for (const r of riders) {
+      if (r.riding) continue;
+      r.drop += dt * 1000;
+      if (r.drop >= DROP_MS) {
+        r.riding = true;
+        omega += K_IMPULSE * r.u;
+        ripples.push({ x: plankPoint(r.u).x, y: SEA_Y, r: 6, life: 0 });
+        if (Math.abs(r.u) > 0.5) sfx.creak();
+      }
+    }
+
+    const ride = riders.filter((r) => r.riding);
+    const sum = ride.reduce((a, r) => a + r.u, 0);
+    const swell = sinkStart ? 0.6 : 1.2;
+    const torque = K_TORQUE * sum + swell * Math.sin(tsec * 2.42);
+    omega += (torque - K_SPRING * theta - K_DAMP * omega) * dt;
+    theta += omega * dt;
+
+    if (!sinkStart) {
+      const s = Math.sin(theta);
+      let slide = 0;
+      if (Math.abs(s) > SIN_SLIP) slide = K_SLIDE * (s - Math.sign(s) * SIN_SLIP);
+      if (slide !== 0) {
+        for (const r of ride) r.u += slide * dt;
+        if (Math.abs(slide) > 0.25 && performance.now() - creakAt > 420) {
+          creakAt = performance.now(); sfx.creak();
+        }
+      }
+      for (const r of ride.slice()) if (Math.abs(r.u) > FALL_U) slipOff(r);
+
+      if (riders.length === 2 && riders.every((r) => r.riding)) {
+        keep += dt;
+        if (keep > bestKeep) bestKeep = keep;
+        if (keep >= KEEP_GOAL) {
+          outcome = 'win';
+          keep = KEEP_GOAL;
+          sfx.hold();
+          sinkStart = performance.now() + 700;   // the beat before it gives way
+        }
+      } else if (keep > 0) keep = 0;
+    }
+
+    // the punchline: two people fit, the buoyancy does not
+    if (sinkStart && performance.now() >= sinkStart) {
+      if (sinkT === 0) sfx.sink();
+      sinkT += dt;
+      if (sinkT < 2.6 && rnd() < 0.12) {
+        for (const r of riders) {
+          const p = plankPoint(r.u);
+          bubbles.push({ x: p.x + rnd() * 26 - 13, y: p.y - 26, r: 2 + rnd() * 3, life: 0 });
+        }
+      }
+      if (rnd() < 0.05) sfx.bubble();
+      if (sinkT >= SINK_MS / 1000) endPlay();
+    }
+
+    // fallen people: splash, then float away on the swell
+    for (const b of bodies) {
+      b.life += dt;
+      if (!b.floating) {
+        b.vy += 620 * dt;
+        b.x += b.vx * dt; b.y += b.vy * dt;
+        b.rot += b.vr * dt;
+        if (b.y > SEA_Y - 4) {
+          b.floating = true;
+          b.vx = b.vx < 0 ? -66 : 66;
+          ripples.push({ x: b.x, y: SEA_Y, r: 8, life: 0 });
+        }
+      } else {
+        b.x += b.vx * dt;
+        b.y = waveY(b.x, tsec) - 4;
+      }
+    }
+    bodies = bodies.filter((b) => b.x > -70 && b.x < W + 70 && b.y < H + 90);
+    for (const p of bubbles) { p.life += dt; p.y -= (16 + p.r * 5) * dt; }
+    bubbles = bubbles.filter((p) => p.life < 2.2 && p.y > SEA_Y - 4);
+    for (const q of ripples) { q.life += dt; q.r += 50 * dt; }
+    ripples = ripples.filter((q) => q.life < 1.0);
+
+    if (!autoplay) {
+      const ph = (tsec * 0.42) % 1;
+      markerU = (ph < 0.5 ? ph * 4 - 1 : 3 - ph * 4);
+    }
+    if (autoplay) runScript();
+
+    const limit = autoplay ? 17000 : 60000;
+    if (!sinkStart && playMs() > limit) { outcome = 'lose'; endPlay(); }
+  }
+
+  // ---- autoplay: one person is fine -> two on one side -> one goes in
+  //      -> put the second one opposite -> it balances -> it sinks anyway
+  function runScript() {
+    const t = playMs();
+    if (step === 0 && t > 700) {
+      board(-0.80); step = 1;
+    } else if (step === 1 && t > 3600) {
+      board(-0.45); step = 2;
+    } else if (step === 2) {
+      if (dropped >= 1) { step = 3; stepAt = performance.now() + 1300; }
+      else if (t > 9000) { if (riders.length) slipOff(riders[0]); }
+    } else if (step === 3 && performance.now() > stepAt) {
+      const left = riders[0];
+      const u = left ? -left.u : 0.8;
+      board(Math.max(0.4, Math.min(0.95, u)));
+      step = 4;
+    }
+  }
+
+  // ---- drawing ------------------------------------------------------------
+  function drawFigure(x, y, scale, color, rot, arms) {
+    ctx.save();
+    ctx.translate(x, y);
+    if (rot) ctx.rotate(rot);
+    ctx.scale(scale, scale);
+    ctx.strokeStyle = color; ctx.fillStyle = color;
+    ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-8, 0); ctx.lineTo(0, -26); ctx.lineTo(8, 0);
+    ctx.moveTo(0, -26); ctx.lineTo(0, -46);
+    const a = arms || 0;
+    ctx.moveTo(-16, -38 - a); ctx.lineTo(0, -44); ctx.lineTo(16, -38 - a);
+    ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, -54, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawPlank() {
+    ctx.save();
+    ctx.translate(CX, plankY());
+    ctx.rotate(theta);
+    ctx.fillStyle = '#8a5f38';
+    ctx.fillRect(-PL, 0, PL * 2, PTH);
+    ctx.fillStyle = '#4a3018';
+    ctx.fillRect(-PL, PTH - 4, PL * 2, 4);
+    for (const r of riders) {
+      const lx = r.u * PL;
+      const dy = r.riding ? 0 : -(1 - r.drop / DROP_MS) * 190;
+      const col = r.id % 2 ? '#a6dcea' : '#f2e9d8';
+      const wob = r.riding ? Math.abs(Math.sin(theta)) * 10 : 0;
+      drawFigure(lx, dy, 1, col, 0, wob);
+    }
+    ctx.restore();
+  }
+
+  function drawWater(tsec) {
+    ctx.beginPath();
+    ctx.moveTo(0, waveY(0, tsec));
+    for (let x = 24; x <= W; x += 24) ctx.lineTo(x, waveY(x, tsec));
+    ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+    ctx.fillStyle = 'rgba(10,28,50,0.72)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(126,166,206,0.35)';
+    ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let x = 0; x <= W; x += 24) {
+      const y = waveY(x, tsec);
+      if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  function drawWorld(tsec) {
+    ctx.drawImage(bg, 0, 0);
+    drawPlank();
+    for (const b of bodies) {
+      if (!b.floating) drawFigure(b.x, b.y, 1, b.col, b.rot, 6);
+      else drawFigure(b.x, b.y, 0.9, b.col, Math.PI * 0.5, 10);
+    }
+    drawWater(tsec);
+    for (const p of bubbles) {
+      ctx.strokeStyle = 'rgba(170,206,238,' + (0.4 * (1 - p.life / 2.2)).toFixed(2) + ')';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.stroke();
+    }
+    for (const q of ripples) {
+      ctx.strokeStyle = 'rgba(170,206,238,' + (0.4 * (1 - q.life / 1.0)).toFixed(2) + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(q.x, q.y, q.r, q.r * 0.28, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    drawTestImage();   // [PoC] 外部画像。実際の広告ならスポンサーロゴが入る位置
+  }
+
+  function drawTitle() {
+    const s = 'あの板、2人乗れた説';
+    let size = 58;
+    ctx.font = '700 ' + size + 'px ' + FONT;
+    while (size > 20 && ctx.measureText(s).width > W - 80) {
+      size -= 1; ctx.font = '700 ' + size + 'px ' + FONT;
+    }
+    ctx.fillStyle = '#f2ecdd';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(s, CX, 262);
+  }
+
+  function drawHud() {
+    // one flat progress bar along the bottom edge; nothing else
+    if (keep > 0 && !sinkT) {
+      ctx.fillStyle = '#c8d8ea';
+      ctx.fillRect(0, H - 4, W * Math.min(1, keep / KEEP_GOAL), 4);
+    }
+    if (!autoplay && mode === 'play' && !sinkStart && riders.length < 2) {
+      const mx = CX + markerU * PL;
+      const my = plankY() + markerU * PL * Math.sin(theta) - 96;
+      ctx.fillStyle = '#c8d8ea';
+      ctx.beginPath();
+      ctx.moveTo(mx, my + 20); ctx.lineTo(mx - 11, my); ctx.lineTo(mx + 11, my);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+
+  // ---- main loop ----------------------------------------------------------
+  let lastT = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0.001, (now - lastT) / 1000));
+    lastT = now;
+    const el = now - t0;
+
+    if (mode === 'title' && el >= T_TITLE) { mode = 'play'; playT0 = now; }
+    if (mode === 'play') updatePlay(dt);
+
+    if (mode === 'still') {
+      drawWorld(frozenTsec);
+      const rel = now - stillAt;
+      if (rel >= T_STILL) fireDone();
+      if (finished && rel >= T_STILL + T_HOLD) { raf = 0; return; }
+    } else {
+      const tsec = (playT0 ? (now - playT0) : 0) / 1000;
+      drawWorld(tsec);
+      if (mode === 'title') drawTitle();
+      else if (mode === 'play') drawHud();
+    }
+    raf = requestAnimationFrame(frame);
+  }
+
+  function endPlay() {
+    if (mode !== 'play') return;
+    bubbles = []; ripples = [];
+    frozenPlayMs = playMs();
+    frozenTsec = frozenPlayMs / 1000;
+    mode = 'still';
+    stillAt = performance.now();
+  }
+
+  function fireDone() {
+    if (finished) return;
+    finished = true;
+    document.body.dataset.state = 'done';
+    const score = outcome === 'win' ? Math.max(10, 100 - dropped * 20) : 0;
+    const detail = {
+      score: score, outcome: outcome, dropped: dropped,
+      keepSec: Number(bestKeep.toFixed(1)),
+    };
+    document.dispatchEvent(new CustomEvent('game:done', { detail: detail }));
+    // [PoC] 親ページ（計測基盤）へ完了イベントを送る
+    emit('game_complete', {
+      score: detail.score,
+      outcome: detail.outcome,
+      dropped: detail.dropped,
+      keepSec: detail.keepSec,
+      playTimeMs: Math.round(frozenPlayMs),
+      autoplay: autoplay,
+    });
+    if (afterBar && !window.__shoumonaHarness) afterBar.hidden = false;
+  }
+
+  // ---- lifecycle ----------------------------------------------------------
+  window.Game = {
+    start(opts) {
+      const o = opts || {};
+      if (mode === 'title' || mode === 'play' || mode === 'still') return;
+      rnd = mulberry32((o.seed | 0) || DAY_SEED);
+      autoplay = o.autoplay !== false;
+      theta = 0; omega = 0;
+      riders = []; bodies = []; bubbles = []; ripples = [];
+      keep = 0; bestKeep = 0; dropped = 0;
+      sinkStart = 0; sinkT = 0;
+      outcome = 'lose'; finished = false;
+      step = 0; stepAt = 0; riderSeq = 0; markerU = 0; creakAt = 0;
+      stillAt = 0; playT0 = 0; frozenTsec = 0; frozenPlayMs = 0;
+      if (!bg) buildBg();
+      if (!ac) initAudio();      // 音の初期化はここだけ = 必ずユーザー操作の後
+      sfx.title();
+      document.body.dataset.state = 'playing';
+      mode = 'title';
+      t0 = performance.now();
+      lastT = t0;
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(frame);
+      // [PoC] 開始を親へ通知
+      emit('game_start', { autoplay: autoplay, seed: (o.seed | 0) || DAY_SEED });
+    },
+    press: press,
+  };
+
+  // ---- human input --------------------------------------------------------
+  canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    markFirstInteraction(e.pointerType === 'touch' ? 'touch' : 'pointer');  // [PoC]
+    const r = canvas.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    window.Game.press({ x: (e.clientX - r.left) * (W / r.width), y: (e.clientY - r.top) * (H / r.height) });
+  });
+  window.addEventListener('keydown', (e) => {
+    const tag = e.target && e.target.tagName;
+    if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter') {
+      e.preventDefault();
+      markFirstInteraction('keyboard');   // [PoC]
+      window.Game.press();
+    }
+  });
+
+  // ---- start screen (humans only; never for the recording harness) --------
+  const startScreen = document.getElementById('start');
+  const afterBar = document.getElementById('after');
+  if (!window.__shoumonaHarness) {
+    startScreen.hidden = false;
+    const go = (auto) => {
+      startScreen.hidden = true;
+      afterBar.hidden = true;
+      window.Game.start({ seed: DAY_SEED, autoplay: auto });
+    };
+    document.getElementById('btnPlay').addEventListener('click', () => {
+      markFirstInteraction('start_button');   // [PoC]
+      go(false);
+    });
+    document.getElementById('btnAuto').addEventListener('click', () => {
+      markFirstInteraction('start_button');   // [PoC]
+      go(true);
+    });
+    document.getElementById('btnReplay').addEventListener('click', () => {
+      afterBar.hidden = true;
+      if (raf) { cancelAnimationFrame(raf); raf = 0; }
+      mode = 'idle';
+      window.Game.start({ seed: DAY_SEED, autoplay: autoplay });
+    });
+  }
+
+  // ---- [PoC] CTA ----------------------------------------------------------
+  // iframe の中からリンクを踏んでも「親ページごと遷移させない」ことが重要。
+  // それを担保しているのは JS ではなく HTML 側の属性:
+  //   target="_blank"            → 新しいタブで開く（親フレームを書き換えない）
+  //   rel="noopener noreferrer"  → 開いた先から window.opener 経由で
+  //                                こちらを操作されるのを防ぐ
+  // ここでは遷移を止めず、計測だけ行う。
+  const ctaBtn = document.getElementById('btnCta');
+  if (ctaBtn) {
+    ctaBtn.addEventListener('click', () => {
+      emit('cta_click', {
+        href: ctaBtn.getAttribute('href'),
+        label: (ctaBtn.textContent || '').trim(),
+        placement: 'after_game',
+      });
+    });
+  }
+
+  // idle frame so the page is never blank before start()
+  buildBg();
+  ctx.drawImage(bg, 0, 0);
+  drawWater(0);
+
+  // ---- [PoC] 起動完了 -----------------------------------------------------
+  loadTestImage();
+  emit('game_ready', {
+    embedded: window.parent !== window,      // iframe の中かどうか
+    canvas: W + 'x' + H,
+    ua: navigator.userAgent,
+  });
+})();

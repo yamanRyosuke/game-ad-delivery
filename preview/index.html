@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>掲載イメージ（見本）｜ゲーム広告 iframe 配信</title>
+<!--
+  Web メディアの記事ページを簡易再現した「掲載イメージ」。
+  CMS の記事本文の途中に、ゲーム広告を iframe で1枚挿している状態を作る。
+
+  ここで確認したいのは「ゲーム HTML を直接開いた状態」ではなく、
+      親ページ → iframe → ゲーム
+  という2階層の状態でも全部動くか。
+
+  実運用ではこのページは存在しない。メディア側の CMS には
+  下の <iframe> タグ1個だけを貼ってもらう。
+-->
+<style>
+  :root {
+    --ink: #1b1f24;
+    --muted: #6b7480;
+    --line: #e3e6ea;
+    --accent: #1f5f9e;
+    --bg: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: #f4f5f7;
+    color: var(--ink);
+    font-family: "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+    line-height: 1.9;
+  }
+
+  /* --- メディアのヘッダ（それらしく見せるためだけの飾り） --- */
+  .site-header {
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .site-header__inner {
+    max-width: 760px; margin: 0 auto; padding: 12px 20px;
+    display: flex; align-items: baseline; gap: 16px;
+  }
+  .site-logo { font-weight: 800; font-size: 17px; letter-spacing: .04em; color: var(--accent); }
+  .site-nav { font-size: 13px; color: var(--muted); display: flex; gap: 14px; }
+
+  /* --- 記事本体 --- */
+  .article {
+    max-width: 760px; margin: 0 auto; padding: 0 20px 80px;
+    background: var(--bg);
+  }
+  .article__kicker { margin: 28px 0 0; font-size: 12px; color: var(--accent); font-weight: 700; }
+  .article__title {
+    margin: 6px 0 12px;
+    font-size: clamp(22px, 5.4vw, 32px); line-height: 1.4; font-weight: 800;
+  }
+  .article__meta { margin: 0 0 28px; font-size: 13px; color: var(--muted); }
+  .article p { margin: 0 0 1.6em; font-size: 16px; }
+  .article h2 {
+    margin: 2.2em 0 .8em; font-size: 19px;
+    border-left: 4px solid var(--accent); padding-left: 12px;
+  }
+
+  /* --- 広告枠 --------------------------------------------------------
+     枠そのものは幅100%で、中の iframe だけを正方形に保つ。
+     max-width: 720px を超えて拡大させない（Canvas は 720x720 なので
+     それ以上に伸ばすとぼやける）。 */
+  .ad-slot { margin: 40px 0; }
+  .ad-slot__label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; color: var(--muted); letter-spacing: .08em;
+    margin-bottom: 8px;
+  }
+  .ad-slot__label::after {
+    content: ""; flex: 1; height: 1px; background: var(--line);
+  }
+  .ad-slot__badge {
+    border: 1px solid var(--line); padding: 2px 8px; border-radius: 2px;
+    font-weight: 700; color: var(--muted);
+  }
+  .ad-slot__frame {
+    position: relative;
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    aspect-ratio: 1 / 1;      /* Canvas が 720x720 の正方形なので 1:1 を維持 */
+    background: #0a1224;      /* 読み込み中に白く光らないよう、ゲームと同じ地色 */
+  }
+  .ad-slot__frame iframe {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    border: 0; display: block;
+  }
+  .ad-slot__note { margin: 8px auto 0; max-width: 720px; font-size: 12px; color: var(--muted); }
+
+  /* --- postMessage 受信ログ（PoC 専用。本番のメディアには出さない） --- */
+  .probe {
+    max-width: 760px; margin: 0 auto 60px; padding: 16px 20px 20px;
+    background: #10151c; color: #d7dee8; border-radius: 4px;
+  }
+  .probe__head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 10px;
+  }
+  .probe__title { font-size: 13px; font-weight: 700; color: #8fd0a8; margin: 0; }
+  .probe__hint { font-size: 11px; color: #7b8798; margin: 0; }
+  .probe__btn {
+    font: inherit; font-size: 11px; padding: 5px 10px;
+    background: #1d2733; color: #d7dee8; border: 1px solid #33404f; cursor: pointer;
+  }
+  #log {
+    margin: 0; padding: 0; list-style: none;
+    max-height: 260px; overflow-y: auto;
+    font-family: "SFMono-Regular", Consolas, "Courier New", monospace;
+    font-size: 12px; line-height: 1.7;
+  }
+  #log li { padding: 4px 0; border-bottom: 1px solid #1d2733; word-break: break-all; }
+  #log .t { color: #7b8798; }
+  #log .e { color: #f2b45c; font-weight: 700; }
+  #log .d { color: #9fb4cc; }
+  #log .empty { color: #7b8798; border: 0; }
+
+  .site-footer {
+    max-width: 760px; margin: 0 auto; padding: 24px 20px 60px;
+    font-size: 12px; color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <span class="site-logo">SAMPLE MEDIA</span>
+    <nav class="site-nav"><span>ニュース</span><span>特集</span><span>連載</span></nav>
+  </div>
+</header>
+
+<article class="article">
+  <p class="article__kicker">連載：やってみた</p>
+  <h1 class="article__title">浮くと思ったんだけどな — 板と浮力の話</h1>
+  <p class="article__meta">2026年9月7日 ・ サンプル編集部</p>
+
+  <p>
+    海に浮かんだ一枚の板。ひとりが乗るぶんには、なんとかなる。では、ふたりならどうか。
+    直感的には「詰めれば乗れそう」と思ってしまうのだが、実際にやってみると事情が違ってくる。
+    重さが増えれば沈む深さも増え、乗っている面積は変わらないまま、板の縁が水面に近づいていく。
+  </p>
+  <p>
+    バランスの問題もある。ふたりが同じ側に立てば板は傾き、傾けば足元は滑る。
+    左右に離れて立てば釣り合うが、今度は板全体が沈み込む。つまり、うまくいったと思った瞬間が、
+    いちばん危ない瞬間でもある。
+  </p>
+
+  <h2>実際に試せるようにしてみた</h2>
+  <p>
+    文章で読んでもピンとこないので、ブラウザ上で試せるものを用意した。
+    板の上をタップすると、その位置に人が乗る。ふたりで5秒間もちこたえられるかどうか、
+    やってみてほしい。
+  </p>
+
+  <!-- ============ ここから広告枠 ============================================
+       メディアの CMS には、実運用ではこの <iframe> タグ1個だけを貼ってもらう。
+
+         <iframe
+           src="https://yamanryosuke.github.io/game-ad-delivery/campaign001/"
+           width="100%"
+           height="600"
+           frameborder="0"
+           allow="autoplay; fullscreen"
+           title="ゲーム広告：あの板、2人乗れた説"></iframe>
+
+       このページでは同じサーバー上の ../campaign001/ を指している。
+       aspect-ratio で正方形を保つため width/height 属性ではなく CSS で制御している。
+  ======================================================================== -->
+  <div class="ad-slot">
+    <p class="ad-slot__label"><span class="ad-slot__badge">広告</span></p>
+    <div class="ad-slot__frame">
+      <iframe
+        id="adFrame"
+        src="../campaign001/"
+        title="ゲーム広告：あの板、2人乗れた説"
+        allow="autoplay; fullscreen"
+        referrerpolicy="no-referrer-when-downgrade"
+        loading="lazy"></iframe>
+      <!--
+        sandbox を付けるならこの組み合わせが最小構成:
+
+          sandbox="allow-scripts allow-same-origin allow-popups
+                   allow-popups-to-escape-sandbox"
+
+          allow-scripts                 JS を動かす（無いとゲームが起動しない）
+          allow-same-origin             ゲーム側の自オリジンのファイル参照を許す
+          allow-popups                  CTA の target="_blank" を許す
+          allow-popups-to-escape-sandbox  開いた新規タブに sandbox を継承させない
+
+        注意1: allow-scripts と allow-same-origin を両方付けると、
+               sandbox による隔離効果はほぼ無くなる。
+               「別ドメインだから安全」ではなく「信頼できる相手に配信する」前提が要る。
+        注意2: allow-downloads を付けないと、開始画面の zip ダウンロードは動かない。
+      -->
+    </div>
+    <p class="ad-slot__note">
+      ※ 上の枠は、実際に配信サーバーから iframe で読み込んでいるものです。記事は掲載イメージを示すためのダミーです。
+    </p>
+  </div>
+
+  <p>
+    やってみると分かるが、ふたり乗った直後の数秒がいちばん安定している。
+    左右の重さが釣り合い、板は水平になる。ところがその状態こそ、板がいちばん深く沈んでいる状態でもある。
+  </p>
+  <p>
+    結局のところ、板が支えられる重さには上限があって、バランスの巧拙はその上限を動かさない。
+    うまくやれば長く保つが、保った先に待っているものは変わらない。
+  </p>
+
+  <h2>まとめ</h2>
+  <p>
+    ふたり乗れるかどうかは、置き方の問題ではなく浮力の問題だった。
+    ライフジャケットは、板より確実である。
+  </p>
+</article>
+
+<!-- ============ postMessage 受信ログ（PoC 専用） ==========================
+     このブロックは動作確認用。実際の記事には載せない。
+     ここに出るものが、そのまま計測基盤へ送る材料になる。
+======================================================================== -->
+<section class="probe">
+  <div class="probe__head">
+    <p class="probe__title">postMessage 受信ログ（親ページ側）</p>
+    <button class="probe__btn" id="btnClear">クリア</button>
+  </div>
+  <p class="probe__hint">
+    同じ内容が DevTools の Console にも <code>[media-page]</code> の印で出ます。
+  </p>
+  <ul id="log"><li class="empty">まだイベントを受信していません。上のゲームを開始してください。</li></ul>
+</section>
+
+<footer class="site-footer">
+  © 2026 SAMPLE MEDIA（掲載イメージを示すためのダミーページです）
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---- 本番で必ずやること -------------------------------------------------
+  //
+  // 1. origin を検証する
+  //    message イベントは「どのフレーム・どの拡張機能からでも」飛んでくる。
+  //    検証しないと、他人が仕込んだ iframe から偽のコンバージョンを送り込める。
+  //
+  //      const GAME_ORIGIN = 'https://yamanryosuke.github.io';
+  //      if (e.origin !== GAME_ORIGIN) return;
+  //
+  // 2. 送信元フレームも確認する（同じ origin に複数枠がある場合）
+  //
+  //      if (e.source !== document.getElementById('adFrame').contentWindow) return;
+  //
+  // 3. data の形を検証してから使う
+  //    受け取った値をそのまま innerHTML に入れない。数値は Number() で通す。
+  //
+  // この見本ページはゲームと同一オリジンに置いてあるため origin チェックを緩めてある。
+  // メディア側に実装するときは、下の GAME_ORIGIN を実際の配信ドメインに固定すること。
+  const GAME_ORIGIN = '*';           // 本番: 'https://yamanryosuke.github.io'
+  const EXPECTED_SOURCE = 'game-ad'; // ゲーム側が付けている印
+
+  const logEl = document.getElementById('log');
+  let count = 0;
+
+  function render(origin, msg) {
+    if (count === 0) logEl.innerHTML = '';
+    count++;
+    const li = document.createElement('li');
+
+    const t = document.createElement('span');
+    t.className = 't';
+    t.textContent = new Date(msg.ts || Date.now()).toLocaleTimeString('ja-JP') + ' ';
+
+    const e = document.createElement('span');
+    e.className = 'e';
+    e.textContent = msg.event;
+
+    const d = document.createElement('span');
+    d.className = 'd';
+    // textContent なので、ゲーム側から何が来ても HTML としては解釈されない
+    d.textContent = ' ' + JSON.stringify(msg.data) + '  @' + origin;
+
+    li.append(t, e, d);
+    logEl.prepend(li);
+  }
+
+  window.addEventListener('message', (e) => {
+    // 本番ではここで origin を弾く
+    if (GAME_ORIGIN !== '*' && e.origin !== GAME_ORIGIN) return;
+
+    const msg = e.data;
+    // 他の iframe・ブラウザ拡張・ライブラリのメッセージを除外する
+    if (!msg || typeof msg !== 'object' || msg.source !== EXPECTED_SOURCE) return;
+
+    console.log('[media-page] 受信:', msg.event, msg);
+    render(e.origin || '(same)', msg);
+
+    // 実際にはここで計測基盤へ送る。今回は送らない。
+    //   gtag('event', 'game_ad_' + msg.event, msg.data);
+    //   navigator.sendBeacon('/collect', JSON.stringify(msg));
+    switch (msg.event) {
+      case 'game_ready':       /* 表示できた = インプレッション */ break;
+      case 'first_interaction':/* 接触 = エンゲージメント */      break;
+      case 'game_complete':    /* 完走 + スコア + プレイ時間 */    break;
+      case 'cta_click':        /* 送客 */                         break;
+    }
+  });
+
+  document.getElementById('btnClear').addEventListener('click', () => {
+    count = 0;
+    logEl.innerHTML = '<li class="empty">クリアしました。</li>';
+  });
+
+  console.log('[media-page] postMessage の待ち受けを開始しました');
+})();
+</script>
+
+</body>
+</html>

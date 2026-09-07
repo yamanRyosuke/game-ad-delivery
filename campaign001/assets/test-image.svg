@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- PoC 用ダミー画像（ベクター版）。PNG と別経路で読み込めるかの確認に使う。 -->
+  <rect width="128" height="128" fill="#16283f"/>
+  <rect x="4" y="4" width="120" height="120" fill="none" stroke="#4d7dae" stroke-width="8"/>
+  <g stroke="#f2b45c" stroke-width="10" stroke-linecap="round">
+    <line x1="30" y1="30" x2="97" y2="97"/>
+    <line x1="97" y1="30" x2="30" y2="97"/>
+  </g>
+  <g fill="#a6dcea">
+    <circle cx="26" cy="26" r="6"/><circle cx="101" cy="26" r="6"/>
+    <circle cx="26" cy="101" r="6"/><circle cx="101" cy="101" r="6"/>
+  </g>
+  <rect x="30" y="108" width="68" height="6" fill="#f2ecdd"/>
+</svg>
