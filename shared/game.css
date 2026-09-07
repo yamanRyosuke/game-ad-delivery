@@ -1,0 +1,72 @@
+/*
+ * game.css — 広告ゲーム共通の枠まわり
+ *
+ * ゲームごとに違うのは canvas に描く中身だけ。外側は全部これで共通にする。
+ * 表示比率は 1:1 で統一している。メディアに渡す iframe のコードが
+ * ゲームごとに変わらないようにするため。
+ */
+
+html, body { margin: 0; padding: 0; background: #0d1017; overflow: hidden; }
+body {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh;
+  font-family: "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#stage { position: relative; line-height: 0; }
+
+canvas {
+  display: block;
+  /* 画面の短辺に合わせて正方形を保つ。iframe 側で aspect-ratio:1/1 を
+     指定してもらう前提だが、指定が無くても破綻しないようにしている。 */
+  width: min(720px, 100vw, 100vh);
+  height: min(720px, 100vw, 100vh);
+  /* pan-y = 縦スクロールはブラウザに任せ、タップだけをゲームが受け取る。
+     none にすると canvas の上で記事をスクロールできず、
+     スマホで「広告に指が吸い付いて記事が読めない」状態になる。 */
+  touch-action: pan-y;
+  background: #0d1017;
+}
+
+/* --- 開始画面 ------------------------------------------------------------ */
+#start {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(13, 16, 23, 0.93);
+  line-height: 1.6;
+}
+#start .card { width: min(88%, 520px); text-align: center; color: #f2f4f8; }
+#start h1 { margin: 0 0 10px; font-size: clamp(20px, 5.4vw, 30px); font-weight: 800; }
+#start p  { margin: 0 0 22px; font-size: clamp(12px, 3.2vw, 15px); color: #97a3b4; }
+#start .btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* --- 終了後のバー -------------------------------------------------------- */
+/* canvas の「下」ではなく「上」に重ねる。iframe を正方形にすると canvas が
+   枠いっぱいになり、下に置いた要素は見えなくなるため。 */
+#after {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;
+  padding: 16px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+  line-height: 1.6;
+  background: linear-gradient(to top, rgba(13, 16, 23, 0.96), rgba(13, 16, 23, 0));
+}
+
+#start[hidden], #after[hidden] { display: none; }
+
+/* --- ボタン -------------------------------------------------------------- */
+button, #btnCta {
+  font: inherit; font-size: clamp(13px, 3.4vw, 16px); font-weight: 700;
+  padding: 12px 20px; border: 1px solid #3d5a80; border-radius: 4px;
+  background: #1b2436; color: #f2f4f8; cursor: pointer;
+}
+button:hover { background: #243049; }
+#btnCta {
+  display: inline-block; text-decoration: none; box-sizing: border-box;
+  background: #f5b544; color: #1b2436; border-color: #f5b544;
+}
+#btnCta:hover { background: #f7c467; }
+
+/* 右下の「埋め込みコード」ボタンは embed-button.js が自前で描画する。
+   どのゲームの CSS でも同じ見た目になるよう、あちら側で完結させてある。 */

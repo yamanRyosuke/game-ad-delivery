@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>掲載の手引き｜ゲーム広告</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="../shared/page.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="top__inner">
+    <p class="eyebrow"><a href="../">← ゲームメニューへ戻る</a></p>
+    <h1>掲載の手引き</h1>
+    <p class="lede">
+      記事の本文中に、遊べるゲームを広告として1枠差し込むための手順です。
+      貼っていただくのは <code>&lt;iframe&gt;</code> タグ1個だけで、
+      画像・スクリプト・音はすべて当方のサーバーから配信されます。
+      御社側での開発・ファイル設置・ビルドは不要です。
+    </p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2><span class="num">1</span>掲載までの流れ</h2>
+  <ol>
+    <li><a href="../">ゲームメニュー</a>で、掲載するゲームを選ぶ</li>
+    <li>そのゲームの「コードをコピー」を押す</li>
+    <li>記事本文の、掲載したい位置に貼り付ける</li>
+    <li>プレビューで表示を確認する（下のチェックリスト）</li>
+  </ol>
+  <p>
+    どのゲームも表示は<strong>正方形（1:1）で統一</strong>してあります。
+    ゲームを差し替えても、貼るコードの形と枠の大きさは変わりません。
+  </p>
+
+  <div class="note">
+    <strong>CMS が属性を削除することがあります</strong>
+    貼り付けたあとに <code>allow</code> や <code>style</code> が消えていないか、
+    プレビューのソースでご確認ください。消えている場合はお知らせください。
+    <code>allow="autoplay"</code> が消えると、音が鳴らない場合があります。
+    <code>&lt;div style="..."&gt;</code> ごと消される場合は、幅固定のコードをお渡しします。
+  </div>
+
+  <h2><span class="num">2</span>掲載後の確認</h2>
+  <p>PC とスマートフォンの両方で、記事ページを開いて確認してください。</p>
+  <ul class="check">
+    <li>枠の中にゲームのタイトル画面と「はじめる」ボタンが表示される</li>
+    <li>「はじめる」を押すとゲームが始まる</li>
+    <li>タップに反応する（スマートフォン）</li>
+    <li><strong>広告の上を縦にスワイプしても、記事が普通にスクロールできる</strong></li>
+    <li>横スクロールが発生していない</li>
+    <li>ページを開いただけでは音が鳴らず、「はじめる」を押した後に鳴る</li>
+    <li>終了後に出る「詳しくはこちら」を押すと、<strong>新しいタブ</strong>で開き、記事のページはそのまま残る</li>
+    <li>枠の中に開発用のボタン（「埋め込みコード」）が<strong>出ていない</strong>
+        ※ 記事に埋め込むと自動的に隠れます。もし出ていたらお知らせください</li>
+  </ul>
+
+  <h2><span class="num">3</span>枠が表示されないとき</h2>
+  <p>ブラウザの開発者ツール（F12）の Console に出るメッセージで、原因が切り分けられます。</p>
+  <table>
+    <thead>
+      <tr><th style="width:52%">Console に出るメッセージ</th><th>原因と対応</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>Refused to frame '...' because it violates the following Content Security Policy directive: "frame-src ..."</code></td>
+        <td><strong>御社サイトの CSP による拒否です。</strong>
+            配信ドメイン <code id="originInline">yamanryosuke.github.io</code> を
+            <code>frame-src</code> に追加していただく必要があります。
+            当方の設定では解決できません。</td>
+      </tr>
+      <tr>
+        <td><code>Mixed Content: ... was loaded over HTTPS, but requested an insecure resource</code></td>
+        <td>URL が <code>http://</code> になっています。<code>https://</code> でお貼りください。</td>
+      </tr>
+      <tr>
+        <td><code>Refused to display '...' in a frame because it set 'X-Frame-Options'</code></td>
+        <td><strong>当方の配信サーバー側の問題です。</strong>ご連絡ください。</td>
+      </tr>
+      <tr>
+        <td>何も出ないが枠が空白</td>
+        <td>広告ブロッカー、または <code>sandbox</code> 属性が付いている可能性があります。次の項をご覧ください。</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2><span class="num">4</span>sandbox 属性を付ける場合</h2>
+  <p>御社の運用で <code>sandbox</code> が必須の場合、最低限この4つが必要です。</p>
+  <div class="codebox">
+    <button class="codebox__copy" type="button">コピー</button>
+    <pre>sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"</pre>
+  </div>
+  <table>
+    <thead><tr><th style="width:42%">値</th><th>無いとどうなるか</th></tr></thead>
+    <tbody>
+      <tr><td><code>allow-scripts</code></td><td>ゲームが起動しません</td></tr>
+      <tr><td><code>allow-same-origin</code></td><td>画像とスクリプトが読めません</td></tr>
+      <tr><td><code>allow-popups</code></td><td>「詳しくはこちら」が開きません</td></tr>
+      <tr><td><code>allow-popups-to-escape-sandbox</code></td><td>遷移先のページが正しく動きません</td></tr>
+    </tbody>
+  </table>
+
+  <h2><span class="num">5</span>計測をご希望の場合（任意）</h2>
+  <p>
+    ゲームは親ページへ <code>postMessage</code> でイベントを送っています。
+    受け取る実装は必須ではありません。<strong>受け取らなくても掲載には支障ありません。</strong>
+    御社の GA4 等で計測される場合は、以下を記事ページに追加してください。
+    <strong>どのゲームでもイベントの形は同じ</strong>です（<code>campaign</code> でゲームを区別できます）。
+  </p>
+
+  <table>
+    <thead><tr><th style="width:32%">イベント</th><th>タイミング / 主なデータ</th></tr></thead>
+    <tbody>
+      <tr><td><code>game_ready</code></td><td>枠が表示され、ゲームの読み込みが完了した（＝インプレッション）</td></tr>
+      <tr><td><code>first_interaction</code></td><td>読者が最初に操作した1回だけ（＝エンゲージメント）</td></tr>
+      <tr><td><code>game_start</code></td><td>ゲーム開始</td></tr>
+      <tr><td><code>game_complete</code></td><td>終了。<code>score</code> と <code>playTimeMs</code> を含む</td></tr>
+      <tr><td><code>cta_click</code></td><td>「詳しくはこちら」がクリックされた（＝送客）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="codebox">
+    <button class="codebox__copy" type="button">コピー</button>
+    <pre id="snippetC">読み込み中…</pre>
+  </div>
+
+  <div class="note">
+    <strong>受信側では必ず origin を確認してください</strong>
+    <code>message</code> イベントは、他の iframe やブラウザ拡張からも届きます。
+    上のコードのように送信元を検証しないと、無関係なメッセージを計測してしまいます。
+  </div>
+
+  <p>
+    実際に受信している様子は<a href="../preview/">掲載イメージのページ</a>の下部で確認できます。
+  </p>
+
+  <h2><span class="num">6</span>共通仕様</h2>
+  <table>
+    <tbody>
+      <tr><th style="width:34%">表示サイズ</th><td>正方形（1:1）。原寸 720×720px、最大幅 720px で縮小表示。全ゲーム共通</td></tr>
+      <tr><th>実装</th><td>HTML / CSS / JavaScript（Canvas 2D）。外部ライブラリ・フレームワークなし</td></tr>
+      <tr><th>通信</th><td>すべて当方のサーバー（HTTPS）から。御社サーバーへの負荷はありません</td></tr>
+      <tr><th>Cookie</th><td>使用していません</td></tr>
+      <tr><th>個人情報</th><td>取得していません</td></tr>
+      <tr><th>音</th><td>あり。ページを開いただけでは鳴りません（「はじめる」押下後のみ）</td></tr>
+      <tr><th>操作</th><td>タップ / クリック。キーボード（Space・Enter）にも対応</td></tr>
+      <tr><th>対応</th><td>Chrome / Safari / Edge / Firefox の最新版。iOS・Android 対応</td></tr>
+      <tr><th>AMP</th><td>未対応。AMP ページには <code>&lt;amp-iframe&gt;</code> が必要なため、別途ご相談ください</td></tr>
+    </tbody>
+  </table>
+
+  <footer>
+    <p>
+      不具合・ご質問は担当までご連絡ください。
+      Console のエラーメッセージと、ご確認いただいた端末・ブラウザを添えていただけると助かります。
+    </p>
+    <p>配信ドメイン: <code id="originFoot">yamanryosuke.github.io</code></p>
+  </footer>
+
+</div>
+
+<script src="../shared/page.js"></script>
+<script>
+(() => {
+  'use strict';
+  const origin = location.origin;
+  document.getElementById('snippetC').textContent =
+'<script>\n' +
+'window.addEventListener("message", function (e) {\n' +
+'  // 1. 送信元のドメインを確認する（必須）\n' +
+'  if (e.origin !== "' + origin + '") return;\n' +
+'  // 2. このゲームからのメッセージか確認する\n' +
+'  var msg = e.data;\n' +
+'  if (!msg || typeof msg !== "object" || msg.source !== "game-ad") return;\n' +
+'\n' +
+'  // msg.event    game_ready / first_interaction / game_start /\n' +
+'  //              game_complete / cta_click\n' +
+'  // msg.campaign どのゲームか（suika / flappy / runner など）\n' +
+'  // msg.data     score や playTimeMs など\n' +
+'\n' +
+'  // 例: GA4 へ送る場合\n' +
+'  // gtag("event", "game_ad_" + msg.event, msg.data);\n' +
+'  console.log("game-ad:", msg.campaign, msg.event, msg.data);\n' +
+'});\n' +
+'<\/script>';
+  document.getElementById('originInline').textContent = location.host;
+  document.getElementById('originFoot').textContent = location.host;
+})();
+</script>
+
+</body>
+</html>

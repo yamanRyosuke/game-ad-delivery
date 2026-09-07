@@ -264,6 +264,14 @@
   // この見本ページはゲームと同一オリジンに置いてあるため origin チェックを緩めてある。
   // メディア側に実装するときは、下の GAME_ORIGIN を実際の配信ドメインに固定すること。
   const GAME_ORIGIN = '*';           // 本番: 'https://yamanryosuke.github.io'
+
+  // ?game=suika のように指定して、載せるゲームを差し替えられるようにしてある。
+  // 受け取った値はそのまま src に入れず、必ず許可リストと突き合わせる。
+  const ALLOWED = { suika: 1, flappy: 1, runner: 1, campaign001: 1 };
+  const want = new URLSearchParams(location.search).get('game');
+  if (want && ALLOWED[want]) {
+    document.getElementById('adFrame').src = '../' + want + '/';
+  }
   const EXPECTED_SOURCE = 'game-ad'; // ゲーム側が付けている印
 
   const logEl = document.getElementById('log');

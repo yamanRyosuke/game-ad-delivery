@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>すきまくぐり｜ゲーム広告</title>
+<link rel="stylesheet" href="../shared/game.css">
+</head>
+<body data-state="ready">
+<div id="stage">
+  <canvas id="game" width="720" height="720"></canvas>
+
+  <div id="start" hidden>
+    <div class="card">
+      <h1>すきまくぐり</h1>
+      <p>タップで上に飛ぶ。柱のすきまを抜けていく。<br>（キーボードは Space / Enter）</p>
+      <div class="btns"><button id="btnPlay">はじめる</button></div>
+    </div>
+  </div>
+
+  <div id="after" hidden>
+    <button id="btnReplay">もう一回</button>
+    <a id="btnCta" href="https://example.com/lp/flappy"
+       target="_blank" rel="noopener noreferrer">詳しくはこちら</a>
+  </div>
+</div>
+
+<script src="../shared/ad-sdk.js"></script>
+<script src="../shared/sfx.js"></script>
+<script src="./game.js"></script>
+<script src="../shared/embed-button.js"></script>
+</body>
+</html>

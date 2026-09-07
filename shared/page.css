@@ -1,0 +1,133 @@
+/*
+ * page.css — 説明ページ（メニュー・手引き）の共通スタイル
+ * ゲーム本体は game.css を使う。こちらは読み物のためのもの。
+ */
+
+:root {
+  --ink: #1b1f24;
+  --muted: #626b76;
+  --line: #e2e6ea;
+  --accent: #1f5f9e;
+  --bg: #ffffff;
+  --soft: #f5f7f9;
+  --code-bg: #10151c;
+  --code-ink: #d7dee8;
+  --warn-bg: #fff8ec;
+  --warn-line: #e8c98a;
+  --ok: #1d7a4d;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e6eaef; --muted: #9aa5b1; --line: #2b333d; --accent: #6fb0ee;
+    --bg: #12161b; --soft: #1a1f26; --code-bg: #0b0e13; --code-ink: #d7dee8;
+    --warn-bg: #2a2313; --warn-line: #6b5a2c; --ok: #6cc79b;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  line-height: 1.85; font-size: 16px;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 0 20px 100px; }
+
+header.top { border-bottom: 1px solid var(--line); margin-bottom: 36px; }
+.top__inner { max-width: 860px; margin: 0 auto; padding: 28px 20px 24px; }
+.eyebrow { font-size: 12px; letter-spacing: .1em; color: var(--accent); font-weight: 700; margin: 0 0 8px; }
+.eyebrow a { color: inherit; text-decoration: none; }
+.eyebrow a:hover { text-decoration: underline; }
+h1 { margin: 0 0 10px; font-size: clamp(23px, 5vw, 31px); line-height: 1.35; font-weight: 800; }
+.lede { margin: 0; color: var(--muted); font-size: 15px; }
+
+h2 {
+  margin: 3em 0 .9em; font-size: 20px; font-weight: 800;
+  padding-bottom: 8px; border-bottom: 2px solid var(--line);
+}
+h2 .num {
+  display: inline-block; min-width: 1.9em; height: 1.9em; line-height: 1.9em;
+  text-align: center; background: var(--accent); color: #fff;
+  border-radius: 50%; font-size: 13px; margin-right: 10px; vertical-align: 2px;
+}
+h3 { margin: 2em 0 .6em; font-size: 15px; font-weight: 700; }
+p { margin: 0 0 1.3em; }
+ul, ol { margin: 0 0 1.3em; padding-left: 1.4em; }
+li { margin-bottom: .5em; }
+a { color: var(--accent); }
+strong { font-weight: 700; }
+code {
+  font-family: "SFMono-Regular", Consolas, monospace; font-size: .89em;
+  background: var(--soft); padding: 2px 5px; border-radius: 3px;
+}
+
+.cta-link {
+  display: inline-block; text-decoration: none; font-weight: 700;
+  background: var(--accent); color: #fff; padding: 13px 26px; border-radius: 4px;
+}
+.cta-link:hover { opacity: .9; }
+
+.codebox { position: relative; margin: 0 0 1.4em; }
+.codebox pre {
+  margin: 0; background: var(--code-bg); color: var(--code-ink);
+  padding: 18px; border-radius: 5px;
+  overflow-x: auto; font-size: 13px; line-height: 1.65;
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+.codebox__copy {
+  position: absolute; top: 10px; right: 10px;
+  font: inherit; font-size: 12px; font-weight: 700;
+  padding: 5px 12px; border-radius: 3px; cursor: pointer;
+  background: #2b3543; color: #d7dee8; border: 1px solid #3d4a5c;
+}
+.codebox__copy:hover { background: #37455a; }
+.codebox__copy.done { background: var(--ok); border-color: var(--ok); color: #fff; }
+
+table { border-collapse: collapse; width: 100%; margin: 0 0 1.5em; font-size: 14px; }
+th, td { border: 1px solid var(--line); padding: 9px 11px; text-align: left; vertical-align: top; }
+th { background: var(--soft); font-weight: 700; }
+td code { font-size: .85em; }
+
+.note {
+  background: var(--warn-bg); border: 1px solid var(--warn-line);
+  border-radius: 4px; padding: 16px 18px; margin: 0 0 1.5em; font-size: 14.5px;
+}
+.note > :last-child { margin-bottom: 0; }
+.note strong { display: block; margin-bottom: 4px; }
+
+.check { list-style: none; padding-left: 0; }
+.check li { padding-left: 1.9em; position: relative; }
+.check li::before {
+  content: "☐"; position: absolute; left: 0; top: 0;
+  color: var(--accent); font-size: 17px;
+}
+
+footer { margin-top: 60px; padding-top: 22px; border-top: 1px solid var(--line);
+         font-size: 13px; color: var(--muted); }
+
+/* --- ゲームメニューのカード ---------------------------------------------- */
+.games {
+  display: grid; gap: 26px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin: 0 0 2em;
+}
+.game {
+  border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+  background: var(--soft); display: flex; flex-direction: column;
+}
+.game__frame {
+  position: relative; width: 100%; aspect-ratio: 1 / 1; background: #0d1017;
+}
+.game__frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.game__body { padding: 14px 16px 16px; flex: 1; display: flex; flex-direction: column; }
+.game__name { margin: 0 0 4px; font-size: 17px; font-weight: 800; }
+.game__desc { margin: 0 0 14px; font-size: 13.5px; color: var(--muted); line-height: 1.7; flex: 1; }
+.game__acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.game__acts a, .game__acts button {
+  font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  padding: 8px 14px; border-radius: 4px; text-decoration: none;
+  border: 1px solid var(--accent); background: var(--accent); color: #fff;
+}
+.game__acts .ghost { background: transparent; color: var(--accent); }
+.game__acts .ghost:hover { background: rgba(31, 95, 158, 0.08); }
+.game__acts button.done { background: var(--ok); border-color: var(--ok); color: #fff; }
