@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-09-07 20:35",
+  "builtAt": "2026-09-08 12:18",
   "games": [
     {
       "id": "suika",
@@ -59,12 +59,12 @@
       "h": 250,
       "sizeName": "レクタングル",
       "sizeNote": "最も配信量が多い定番サイズ",
-      "htmlBytes": 27194,
-      "zipBytes": 10413,
+      "htmlBytes": 27270,
+      "zipBytes": 10446,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/suika",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=suika",
       "problems": []
     },
     {
@@ -75,12 +75,12 @@
       "h": 280,
       "sizeName": "ラージレクタングル",
       "sizeNote": "記事内に置かれることが多い",
-      "htmlBytes": 27194,
-      "zipBytes": 10410,
+      "htmlBytes": 27270,
+      "zipBytes": 10442,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/suika",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=suika",
       "problems": []
     },
     {
@@ -91,12 +91,12 @@
       "h": 250,
       "sizeName": "スクエア",
       "sizeNote": "枠が狭いページ向け",
-      "htmlBytes": 27194,
-      "zipBytes": 10410,
+      "htmlBytes": 27270,
+      "zipBytes": 10441,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/suika",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=suika",
       "problems": []
     },
     {
@@ -107,12 +107,12 @@
       "h": 600,
       "sizeName": "ハーフページ",
       "sizeNote": "縦長。サイドバー向けで視認時間が長い",
-      "htmlBytes": 27621,
-      "zipBytes": 10542,
+      "htmlBytes": 27697,
+      "zipBytes": 10574,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/suika",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=suika",
       "problems": []
     },
     {
@@ -123,12 +123,12 @@
       "h": 480,
       "sizeName": "モバイル全画面",
       "sizeNote": "インタースティシャル。実質フルスクリーン",
-      "htmlBytes": 27621,
-      "zipBytes": 10546,
+      "htmlBytes": 27697,
+      "zipBytes": 10578,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/suika",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=suika",
       "problems": []
     },
     {
@@ -139,12 +139,12 @@
       "h": 250,
       "sizeName": "レクタングル",
       "sizeNote": "最も配信量が多い定番サイズ",
-      "htmlBytes": 24414,
-      "zipBytes": 9290,
+      "htmlBytes": 24490,
+      "zipBytes": 9322,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/flappy",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=flappy",
       "problems": []
     },
     {
@@ -155,12 +155,12 @@
       "h": 280,
       "sizeName": "ラージレクタングル",
       "sizeNote": "記事内に置かれることが多い",
-      "htmlBytes": 24414,
-      "zipBytes": 9291,
+      "htmlBytes": 24490,
+      "zipBytes": 9323,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/flappy",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=flappy",
       "problems": []
     },
     {
@@ -171,12 +171,12 @@
       "h": 250,
       "sizeName": "スクエア",
       "sizeNote": "枠が狭いページ向け",
-      "htmlBytes": 24414,
-      "zipBytes": 9285,
+      "htmlBytes": 24490,
+      "zipBytes": 9316,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/flappy",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=flappy",
       "problems": []
     },
     {
@@ -187,12 +187,12 @@
       "h": 600,
       "sizeName": "ハーフページ",
       "sizeNote": "縦長。サイドバー向けで視認時間が長い",
-      "htmlBytes": 24841,
-      "zipBytes": 9433,
+      "htmlBytes": 24917,
+      "zipBytes": 9464,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/flappy",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=flappy",
       "problems": []
     },
     {
@@ -203,12 +203,12 @@
       "h": 480,
       "sizeName": "モバイル全画面",
       "sizeNote": "インタースティシャル。実質フルスクリーン",
-      "htmlBytes": 24841,
-      "zipBytes": 9434,
+      "htmlBytes": 24917,
+      "zipBytes": 9465,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/flappy",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=flappy",
       "problems": []
     },
     {
@@ -219,12 +219,12 @@
       "h": 250,
       "sizeName": "レクタングル",
       "sizeNote": "最も配信量が多い定番サイズ",
-      "htmlBytes": 24691,
-      "zipBytes": 9506,
+      "htmlBytes": 24767,
+      "zipBytes": 9538,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/runner",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=runner",
       "problems": []
     },
     {
@@ -235,12 +235,12 @@
       "h": 280,
       "sizeName": "ラージレクタングル",
       "sizeNote": "記事内に置かれることが多い",
-      "htmlBytes": 24691,
-      "zipBytes": 9505,
+      "htmlBytes": 24767,
+      "zipBytes": 9538,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/runner",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=runner",
       "problems": []
     },
     {
@@ -251,12 +251,12 @@
       "h": 250,
       "sizeName": "スクエア",
       "sizeNote": "枠が狭いページ向け",
-      "htmlBytes": 24691,
-      "zipBytes": 9501,
+      "htmlBytes": 24767,
+      "zipBytes": 9533,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/runner",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=runner",
       "problems": []
     },
     {
@@ -267,12 +267,12 @@
       "h": 600,
       "sizeName": "ハーフページ",
       "sizeNote": "縦長。サイドバー向けで視認時間が長い",
-      "htmlBytes": 25118,
-      "zipBytes": 9646,
+      "htmlBytes": 25194,
+      "zipBytes": 9678,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/runner",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=runner",
       "problems": []
     },
     {
@@ -283,12 +283,12 @@
       "h": 480,
       "sizeName": "モバイル全画面",
       "sizeNote": "インタースティシャル。実質フルスクリーン",
-      "htmlBytes": 25118,
-      "zipBytes": 9645,
+      "htmlBytes": 25194,
+      "zipBytes": 9677,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/runner",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=runner",
       "problems": []
     },
     {
@@ -299,12 +299,12 @@
       "h": 250,
       "sizeName": "レクタングル",
       "sizeNote": "最も配信量が多い定番サイズ",
-      "htmlBytes": 34933,
-      "zipBytes": 13579,
+      "htmlBytes": 35009,
+      "zipBytes": 13611,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/campaign001",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=campaign001",
       "problems": []
     },
     {
@@ -315,12 +315,12 @@
       "h": 280,
       "sizeName": "ラージレクタングル",
       "sizeNote": "記事内に置かれることが多い",
-      "htmlBytes": 34933,
-      "zipBytes": 13582,
+      "htmlBytes": 35009,
+      "zipBytes": 13613,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/campaign001",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=campaign001",
       "problems": []
     },
     {
@@ -331,12 +331,12 @@
       "h": 250,
       "sizeName": "スクエア",
       "sizeNote": "枠が狭いページ向け",
-      "htmlBytes": 34933,
-      "zipBytes": 13575,
+      "htmlBytes": 35009,
+      "zipBytes": 13608,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/campaign001",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=campaign001",
       "problems": []
     },
     {
@@ -347,12 +347,12 @@
       "h": 600,
       "sizeName": "ハーフページ",
       "sizeNote": "縦長。サイドバー向けで視認時間が長い",
-      "htmlBytes": 35360,
-      "zipBytes": 13687,
+      "htmlBytes": 35436,
+      "zipBytes": 13715,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/campaign001",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=campaign001",
       "problems": []
     },
     {
@@ -363,12 +363,12 @@
       "h": 480,
       "sizeName": "モバイル全画面",
       "sizeNote": "インタースティシャル。実質フルスクリーン",
-      "htmlBytes": 35360,
-      "zipBytes": 13688,
+      "htmlBytes": 35436,
+      "zipBytes": 13715,
       "zipLimitBytes": 614400,
       "files": 1,
       "fileLimit": 40,
-      "clickTag": "https://example.com/lp/campaign001",
+      "clickTag": "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=campaign001",
       "problems": []
     }
   ]

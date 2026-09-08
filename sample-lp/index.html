@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>サンプル LP｜ゲーム広告 iframe 配信</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; padding: 24px 16px 48px;
+    background: #0a1224; color: #f2ecdd;
+    font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    line-height: 1.7;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; }
+  .badge {
+    display: inline-block; margin-bottom: 20px; padding: 6px 12px;
+    background: #f2b45c; color: #16283f; font-weight: 700; font-size: 13px;
+  }
+  h1 { font-size: clamp(20px, 5vw, 28px); margin: 0 0 16px; }
+  p { color: #c9d4e0; margin: 0 0 16px; }
+  .panel { background: #16283f; border: 1px solid #24405f; padding: 20px; margin: 24px 0; }
+  dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 14px; }
+  dt { color: #a8bacd; }
+  dd { margin: 0; }
+  code { background: #0a1224; padding: 2px 6px; font-size: 13px; }
+  a { color: #f2b45c; }
+  footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #24405f; font-size: 13px; color: #a8bacd; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="badge">これはサンプルです</div>
+
+  <h1>広告主の LP は、ここに入ります</h1>
+
+  <p>
+    このページは、ゲーム広告の CTA（「詳しくはこちら」）を押したときの
+    <strong>遷移先の位置を示すためだけのサンプル</strong>です。
+    実在の商品・サービスではありません。
+  </p>
+
+  <p>
+    実際の案件では、ここが広告主の商品ページやキャンペーン LP に差し替わります。
+    差し替えるのは各ゲームの <code>index.html</code> にある <code>#btnCta</code> の
+    <code>href</code> 1箇所だけで、ゲーム本体には手を入れません。
+  </p>
+
+  <div class="panel">
+    <dl>
+      <dt>遷移元</dt>
+      <dd id="from">（判別できませんでした）</dd>
+      <dt>開き方</dt>
+      <dd><code>target="_blank"</code> の新しいタブ（親ページは遷移しません）</dd>
+      <dt>親への通知</dt>
+      <dd><code>cta_click</code> を <code>postMessage</code> で送出済み</dd>
+    </dl>
+  </div>
+
+  <p>
+    ここまで到達していれば、<strong>別オリジンの iframe の中からでも
+    CTA が正しく新しいタブで開いている</strong>ことが確認できています。
+  </p>
+
+  <p><a href="../">← 掲載メニューに戻る</a></p>
+
+  <footer>
+    ゲーム広告 iframe 配信 / 動作確認用のサンプルページ
+  </footer>
+
+</div>
+
+<script>
+(() => {
+  const c = new URLSearchParams(location.search).get('c');
+  // クエリはページに書き出すので、素性の知れない文字列をそのまま入れない。
+  // 案件 ID として妥当な形（英数字・ハイフン・アンダースコア）だけ受け付ける。
+  const el = document.getElementById('from');
+  if (c && /^[A-Za-z0-9_-]{1,40}$/.test(c)) {
+    el.textContent = c + ' のゲーム広告';
+  }
+})();
+</script>
+</body>
+</html>

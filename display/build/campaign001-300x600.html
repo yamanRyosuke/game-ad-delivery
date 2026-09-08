@@ -5,14 +5,14 @@
   HTML5 ディスプレイ広告版: あの板、2人乗れた説（300x600）
   tools/build-display.py が生成したもの。直接編集しないこと。
   直すのは campaign001/ と shared/ と display/ の側。
-  ビルド日時: 2026-09-07 20:35:07
+  ビルド日時: 2026-09-08 12:18:20
 -->
 <meta name="ad.size" content="width=300,height=600">
 <script>
 /* clickTag: アドサーバーが遷移先と計測用 URL を差し替えるための変数。
    難読化・圧縮してはいけない（アドサーバーが読めなくなる）。
    ここに書いてある URL は、差し替えられなかったときの保険。 */
-var clickTag = "https://example.com/lp/campaign001";
+var clickTag = "https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=campaign001";
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -109,7 +109,7 @@ body { flex-direction: column; align-items: stretch; justify-content: flex-start
   <div id="after" hidden>
     <button id="btnReplay">もう一回</button>
     
-    <button id="btnCta" data-href="https://example.com/lp/campaign001">詳しくはこちら</button>
+    <button id="btnCta" data-href="https://yamanryosuke.github.io/game-ad-delivery/sample-lp/?c=campaign001">詳しくはこちら</button>
   </div>
 </div>
 <script>
